@@ -1,0 +1,101 @@
+// SPDX-License-Identifier: MIT
+#pragma once
+#include <memory>
+#include <optional>
+#include <string>
+#include <variant>
+#include <vector>
+
+namespace pipegen::ast {
+
+// ---- Type references ----
+
+struct TypeRef;
+using TypeRefPtr = std::shared_ptr<TypeRef>;
+
+struct PrimitiveType {
+    std::string name;   // "string", "boolean", "long", "double", "unsigned long", "unsigned long long", "octet", ...
+    std::optional<int> bound;  // for "string<N>"
+};
+
+struct NamedType {
+    // e.g. ["M_Common", "PositionType"] or ["AlarmCategoryKind", "Type"]
+    std::vector<std::string> qualified_name;
+};
+
+struct SequenceType {
+    TypeRefPtr  element;
+    std::optional<int> max_size;  // sequence<T, N> — N = optional bound
+};
+
+struct TypeRef {
+    std::variant<PrimitiveType, NamedType, SequenceType> value;
+    std::string raw;  // original source spelling, used for diagnostics
+};
+
+// ---- Declarations ----
+
+struct EnumDecl {
+    std::string name;
+    std::vector<std::string> values;
+};
+
+struct StructField {
+    TypeRefPtr  type;
+    std::string name;
+};
+
+struct StructDecl {
+    std::string name;
+    std::vector<StructField> fields;
+    std::size_t source_order = 0;  // declaration index within the module (for emit ordering)
+};
+
+struct TypedefDecl {
+    std::string name;
+    TypeRefPtr  aliased;
+    std::size_t source_order = 0;  // declaration index within the module (for emit ordering)
+};
+
+struct ConstDecl {
+    TypeRefPtr  type;
+    std::string name;
+    std::string literal;   // raw lexeme: "14.1.0", "42", "hello"
+};
+
+struct OpParam {
+    TypeRefPtr  type;
+    std::string name;
+    std::string direction;  // "in" (or "out"/"inout" for completeness)
+};
+
+struct Operation {
+    std::string name;
+    std::vector<OpParam> params;
+};
+
+struct InterfaceDecl {
+    std::string name;        // "IService" or "IClient"
+    std::vector<Operation> operations;
+};
+
+struct Module;
+using ModulePtr = std::shared_ptr<Module>;
+
+struct Module {
+    std::string name;
+    std::vector<EnumDecl>      enums;
+    std::vector<StructDecl>    structs;
+    std::vector<TypedefDecl>   typedefs;
+    std::vector<ConstDecl>     consts;
+    std::vector<InterfaceDecl> interfaces;
+    std::vector<ModulePtr>     submodules;
+};
+
+struct File {
+    std::string source_path;
+    std::vector<std::string> includes;
+    std::vector<ModulePtr> modules;
+};
+
+}  // namespace pipegen::ast

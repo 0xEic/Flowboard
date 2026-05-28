@@ -1,0 +1,83 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "e2e-mount-alert",
+    "description": "Dedicated fixture for the e2e_mount_alert integration test. Do not edit to follow the user-facing examples/mount-altitude-alert.json — this file pins the Client-based alarm-raising topology the e2e driver asserts against (engine M_Alert.Client sends CmdRaiseAlarm to the driver's M_Alert.Service). Mount serviceName 'MainMount' and Alert serviceName 'MainAlert' match e2e_run.cmake's driver args."
+  },
+  "nodes": [
+    { "id": "mount-watcher", "type": "M_Mount.Client",
+      "config": {"domainId": 1, "serviceName": "MainMount"},
+      "position": {"x": 40, "y": 220} },
+
+    { "id": "extract-elevation", "type": "Transform.Extract",
+      "config": {"inputType": "M_Mount::MountPositionType", "field": "Elevation"},
+      "position": {"x": 320, "y": 220} },
+
+    { "id": "alt-check", "type": "Transform.Threshold",
+      "config": {"inputType": "flowboard::Double", "op": ">", "value": 25.0},
+      "position": {"x": 600, "y": 220} },
+
+    { "id": "const-subsystem", "type": "Transform.ConstantSource",
+      "config": {"outputType": "flowboard::String", "value": "Mount"},
+      "position": {"x": 880, "y": 40} },
+
+    { "id": "const-component", "type": "Transform.ConstantSource",
+      "config": {"outputType": "flowboard::String", "value": "Position"},
+      "position": {"x": 880, "y": 130} },
+
+    { "id": "const-measure", "type": "Transform.ConstantSource",
+      "config": {"outputType": "flowboard::String", "value": "Elevation"},
+      "position": {"x": 880, "y": 220} },
+
+    { "id": "const-nature", "type": "Transform.ConstantSource",
+      "config": {"outputType": "flowboard::String", "value": "High"},
+      "position": {"x": 880, "y": 310} },
+
+    { "id": "const-desc", "type": "Transform.ConstantSource",
+      "config": {"outputType": "flowboard::String",
+                 "value": "Mount elevation exceeded 25 degrees"},
+      "position": {"x": 880, "y": 400} },
+
+    { "id": "alarm-factory", "type": "Factory.M_Alert::AlarmConditionInfoType",
+      "config": {},
+      "position": {"x": 1200, "y": 220} },
+
+    { "id": "alert-emitter", "type": "M_Alert.Client",
+      "config": {"domainId": 1, "serviceName": "MainAlert"},
+      "position": {"x": 1500, "y": 220} }
+  ],
+  "edges": [
+    { "from": "mount-watcher.ReportMountPosition.Pos", "to": "extract-elevation.in",
+      "capacity": 256, "policy": "drop_oldest" },
+
+    { "from": "extract-elevation.value", "to": "alt-check.in",
+      "capacity": 256, "policy": "drop_oldest" },
+
+    { "from": "alt-check.out", "to": "const-subsystem.trigger",
+      "capacity": 16, "policy": "block" },
+    { "from": "alt-check.out", "to": "const-component.trigger",
+      "capacity": 16, "policy": "block" },
+    { "from": "alt-check.out", "to": "const-measure.trigger",
+      "capacity": 16, "policy": "block" },
+    { "from": "alt-check.out", "to": "const-nature.trigger",
+      "capacity": 16, "policy": "block" },
+    { "from": "alt-check.out", "to": "const-desc.trigger",
+      "capacity": 16, "policy": "block" },
+    { "from": "alt-check.out", "to": "alarm-factory.trigger",
+      "capacity": 16, "policy": "block" },
+
+    { "from": "const-subsystem.out", "to": "alarm-factory.SubsystemName",
+      "capacity": 16, "policy": "block" },
+    { "from": "const-component.out", "to": "alarm-factory.ComponentName",
+      "capacity": 16, "policy": "block" },
+    { "from": "const-measure.out", "to": "alarm-factory.Measure",
+      "capacity": 16, "policy": "block" },
+    { "from": "const-nature.out", "to": "alarm-factory.Nature",
+      "capacity": 16, "policy": "block" },
+    { "from": "const-desc.out", "to": "alarm-factory.AlarmDescription",
+      "capacity": 16, "policy": "block" },
+
+    { "from": "alarm-factory.out", "to": "alert-emitter.CmdRaiseAlarm.Condition",
+      "capacity": 16, "policy": "block" }
+  ]
+}

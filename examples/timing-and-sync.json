@@ -1,0 +1,392 @@
+{
+  "edges": [
+    {
+      "capacity": 256,
+      "from": "ramp.value",
+      "policy": "drop_oldest",
+      "to": "throttle.in"
+    },
+    {
+      "capacity": 256,
+      "from": "throttle.out",
+      "policy": "drop_oldest",
+      "to": "log-throttled.in"
+    },
+    {
+      "capacity": 256,
+      "from": "ramp.value",
+      "policy": "drop_oldest",
+      "to": "sync.in0"
+    },
+    {
+      "capacity": 256,
+      "from": "square.out",
+      "policy": "drop_oldest",
+      "to": "sync.in1"
+    },
+    {
+      "capacity": 256,
+      "from": "sync.out0",
+      "policy": "drop_oldest",
+      "to": "log-sync0.in"
+    },
+    {
+      "capacity": 256,
+      "from": "sync.out1",
+      "policy": "drop_oldest",
+      "to": "log-sync1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "sync.beforeOutput",
+      "policy": "drop_oldest",
+      "to": "log-before.in"
+    },
+    {
+      "capacity": 256,
+      "from": "sync.afterOutput",
+      "policy": "drop_oldest",
+      "to": "log-after.in"
+    },
+    {
+      "from": "throttle.out",
+      "to": "square.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    }
+  ],
+  "metadata": {
+    "description": "Throttle rate-limits a fast Iterator stream to one value per second. Synchronize joins two derived streams (x and x*x) into a lock-step barrier, emitting beforeOutput, the paired values, then afterOutput.",
+    "name": "timing-and-sync",
+    "authoring": {
+      "edges": [
+        {
+          "capacity": 256,
+          "from": "ramp.value",
+          "policy": "drop_oldest",
+          "to": "throttle.in"
+        },
+        {
+          "capacity": 256,
+          "from": "throttle.out",
+          "policy": "drop_oldest",
+          "to": "log-throttled.in"
+        },
+        {
+          "capacity": 256,
+          "from": "ramp.value",
+          "policy": "drop_oldest",
+          "to": "sync.in0"
+        },
+        {
+          "capacity": 256,
+          "from": "square.out",
+          "policy": "drop_oldest",
+          "to": "sync.in1"
+        },
+        {
+          "capacity": 256,
+          "from": "sync.out0",
+          "policy": "drop_oldest",
+          "to": "log-sync0.in"
+        },
+        {
+          "capacity": 256,
+          "from": "sync.out1",
+          "policy": "drop_oldest",
+          "to": "log-sync1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "sync.beforeOutput",
+          "policy": "drop_oldest",
+          "to": "log-before.in"
+        },
+        {
+          "capacity": 256,
+          "from": "sync.afterOutput",
+          "policy": "drop_oldest",
+          "to": "log-after.in"
+        },
+        {
+          "from": "throttle.out",
+          "to": "square.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        }
+      ],
+      "metadata": {
+        "description": "Throttle rate-limits a fast Iterator stream to one value per second. Synchronize joins two derived streams (x and x*x) into a lock-step barrier, emitting beforeOutput, the paired values, then afterOutput.",
+        "name": "timing-and-sync"
+      },
+      "nodes": [
+        {
+          "config": {
+            "defaults": {
+              "start": true
+            },
+            "endValue": 20,
+            "loop": true,
+            "startValue": 0,
+            "stepSize": 1,
+            "timeBetweenStepsMs": 200
+          },
+          "id": "ramp",
+          "position": {
+            "x": 340,
+            "y": 320
+          },
+          "type": "Sources.Iterator"
+        },
+        {
+          "config": {
+            "inputType": "flowboard::Double",
+            "minPeriodMs": 1000
+          },
+          "id": "throttle",
+          "position": {
+            "x": 720,
+            "y": 140
+          },
+          "type": "Transform.Throttle"
+        },
+        {
+          "config": {
+            "inputType": "flowboard::Double",
+            "prefix": "throttled-1hz"
+          },
+          "id": "log-throttled",
+          "position": {
+            "x": 1100,
+            "y": 140
+          },
+          "type": "Sinks.Log"
+        },
+        {
+          "config": {
+            "formula": "x * x",
+            "valueType": "flowboard::Double"
+          },
+          "id": "square",
+          "position": {
+            "x": 749.7526606188569,
+            "y": 310.62595022102033
+          },
+          "type": "Manipulate.Number"
+        },
+        {
+          "config": {
+            "inputCount": 2,
+            "inputType": "flowboard::Double",
+            "order": [
+              0,
+              1
+            ]
+          },
+          "id": "sync",
+          "position": {
+            "x": 1040,
+            "y": 360
+          },
+          "type": "Transform.Synchronize"
+        },
+        {
+          "config": {
+            "inputType": "flowboard::Double",
+            "prefix": "sync-x"
+          },
+          "id": "log-sync0",
+          "position": {
+            "x": 1420,
+            "y": 280
+          },
+          "type": "Sinks.Log"
+        },
+        {
+          "config": {
+            "inputType": "flowboard::Double",
+            "prefix": "sync-x^2"
+          },
+          "id": "log-sync1",
+          "position": {
+            "x": 1420,
+            "y": 380
+          },
+          "type": "Sinks.Log"
+        },
+        {
+          "config": {
+            "inputType": "flowboard::Bool",
+            "prefix": "sync-before"
+          },
+          "id": "log-before",
+          "position": {
+            "x": 1420,
+            "y": 480
+          },
+          "type": "Sinks.Log"
+        },
+        {
+          "config": {
+            "inputType": "flowboard::Bool",
+            "prefix": "sync-after"
+          },
+          "id": "log-after",
+          "position": {
+            "x": 1420,
+            "y": 580
+          },
+          "type": "Sinks.Log"
+        },
+        {
+          "id": "note-1",
+          "type": "Note",
+          "config": {
+            "text": "Rate-limits a stream, forwarding at most one value per configured interval."
+          },
+          "position": {
+            "x": 476.19999999999993,
+            "y": 111.69999999999993
+          },
+          "width": 211,
+          "height": 70
+        },
+        {
+          "id": "note-1-copy1",
+          "type": "Note",
+          "config": {
+            "text": "Aligns N input streams, emitting them together (out0..outN) once each has a fresh value, with before/after signal outputs."
+          },
+          "position": {
+            "x": 1033.2,
+            "y": 625.8
+          },
+          "width": 220,
+          "height": 95
+        }
+      ],
+      "version": "1.0"
+    }
+  },
+  "nodes": [
+    {
+      "config": {
+        "defaults": {
+          "start": true
+        },
+        "endValue": 20,
+        "loop": true,
+        "startValue": 0,
+        "stepSize": 1,
+        "timeBetweenStepsMs": 200
+      },
+      "id": "ramp",
+      "position": {
+        "x": 340,
+        "y": 320
+      },
+      "type": "Sources.Iterator"
+    },
+    {
+      "config": {
+        "inputType": "flowboard::Double",
+        "minPeriodMs": 1000
+      },
+      "id": "throttle",
+      "position": {
+        "x": 720,
+        "y": 140
+      },
+      "type": "Transform.Throttle"
+    },
+    {
+      "config": {
+        "inputType": "flowboard::Double",
+        "prefix": "throttled-1hz"
+      },
+      "id": "log-throttled",
+      "position": {
+        "x": 1100,
+        "y": 140
+      },
+      "type": "Sinks.Log"
+    },
+    {
+      "config": {
+        "formula": "x * x",
+        "valueType": "flowboard::Double"
+      },
+      "id": "square",
+      "position": {
+        "x": 749.7526606188569,
+        "y": 310.62595022102033
+      },
+      "type": "Manipulate.Number"
+    },
+    {
+      "config": {
+        "inputCount": 2,
+        "inputType": "flowboard::Double",
+        "order": [
+          0,
+          1
+        ]
+      },
+      "id": "sync",
+      "position": {
+        "x": 1040,
+        "y": 360
+      },
+      "type": "Transform.Synchronize"
+    },
+    {
+      "config": {
+        "inputType": "flowboard::Double",
+        "prefix": "sync-x"
+      },
+      "id": "log-sync0",
+      "position": {
+        "x": 1420,
+        "y": 280
+      },
+      "type": "Sinks.Log"
+    },
+    {
+      "config": {
+        "inputType": "flowboard::Double",
+        "prefix": "sync-x^2"
+      },
+      "id": "log-sync1",
+      "position": {
+        "x": 1420,
+        "y": 380
+      },
+      "type": "Sinks.Log"
+    },
+    {
+      "config": {
+        "inputType": "flowboard::Bool",
+        "prefix": "sync-before"
+      },
+      "id": "log-before",
+      "position": {
+        "x": 1420,
+        "y": 480
+      },
+      "type": "Sinks.Log"
+    },
+    {
+      "config": {
+        "inputType": "flowboard::Bool",
+        "prefix": "sync-after"
+      },
+      "id": "log-after",
+      "position": {
+        "x": 1420,
+        "y": 580
+      },
+      "type": "Sinks.Log"
+    }
+  ],
+  "version": "1.0"
+}

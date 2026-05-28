@@ -1,0 +1,451 @@
+{
+  "edges": [
+    {
+      "from": "fsm.state",
+      "to": "manipulate-string-1.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "manipulate-string-1.out",
+      "to": "debug-valuedisplay-1.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "TrafficLight-Button.out",
+      "to": "fsm.turnYellow",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-timer-1.tick",
+      "to": "fsm.turnRed",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "TrafficLight-Button.out",
+      "to": "sources-timer-1.start",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-timer-1-copy1.tick",
+      "to": "fsm.endRed",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "fsm.active.Red",
+      "to": "sources-timer-1-copy1.start",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-timer-1-copy1.tick",
+      "to": "sources-timer-2.start",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-timer-2.tick",
+      "to": "fsm.endYellow",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    }
+  ],
+  "metadata": {
+    "description": "A Flow.StateMachine modelling Normal -> Warning -> Critical escalation, driven by Threshold nodes watching an Iterator ramp. Each threshold's boolean feeds a named transition trigger; the machine's current state and last transition are logged.",
+    "name": "state-machine",
+    "authoring": {
+      "edges": [
+        {
+          "from": "fsm.state",
+          "to": "manipulate-string-1.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "manipulate-string-1.out",
+          "to": "debug-valuedisplay-1.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "TrafficLight-Button.out",
+          "to": "fsm.turnYellow",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-timer-1.tick",
+          "to": "fsm.turnRed",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "TrafficLight-Button.out",
+          "to": "sources-timer-1.start",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-timer-1-copy1.tick",
+          "to": "fsm.endRed",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "fsm.active.Red",
+          "to": "sources-timer-1-copy1.start",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-timer-1-copy1.tick",
+          "to": "sources-timer-2.start",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-timer-2.tick",
+          "to": "fsm.endYellow",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        }
+      ],
+      "metadata": {
+        "description": "A Flow.StateMachine modelling Normal -> Warning -> Critical escalation, driven by Threshold nodes watching an Iterator ramp. Each threshold's boolean feeds a named transition trigger; the machine's current state and last transition are logged.",
+        "name": "state-machine"
+      },
+      "nodes": [
+        {
+          "config": {
+            "initial": "Green",
+            "states": [
+              {
+                "name": "Green",
+                "position": {
+                  "x": 40,
+                  "y": 80
+                }
+              },
+              {
+                "name": "Yellow",
+                "position": {
+                  "x": 260,
+                  "y": 80
+                }
+              },
+              {
+                "name": "Red",
+                "position": {
+                  "x": 480,
+                  "y": 80
+                }
+              }
+            ],
+            "transitions": [
+              {
+                "from": "Green",
+                "to": "Yellow",
+                "trigger": "turnYellow",
+                "position": {
+                  "x": 168,
+                  "y": -25
+                }
+              },
+              {
+                "from": "Yellow",
+                "to": "Red",
+                "trigger": "turnRed",
+                "position": {
+                  "x": 390,
+                  "y": -22.5
+                }
+              },
+              {
+                "from": "Yellow",
+                "to": "Green",
+                "trigger": "endYellow",
+                "position": {
+                  "x": 150,
+                  "y": 200
+                }
+              },
+              {
+                "from": "Red",
+                "to": "Yellow",
+                "trigger": "endRed",
+                "position": {
+                  "x": 370,
+                  "y": 200
+                }
+              }
+            ]
+          },
+          "id": "fsm",
+          "position": {
+            "x": 1097.7942259751305,
+            "y": 283.7053162720716
+          },
+          "type": "Flow.StateMachine",
+          "expandedGroups": [
+            "out:active"
+          ]
+        },
+        {
+          "id": "debug-valuedisplay-1",
+          "type": "Debug.ValueDisplay",
+          "config": {
+            "fields": [],
+            "inputType": "flowboard::String"
+          },
+          "position": {
+            "x": 1590.0071961324825,
+            "y": 425.7465040344998
+          },
+          "width": 219,
+          "height": 110
+        },
+        {
+          "id": "manipulate-string-1",
+          "type": "Manipulate.String",
+          "config": {
+            "find": "",
+            "mode": "prepend",
+            "replace": "",
+            "text": "The traffic light is "
+          },
+          "position": {
+            "x": 1336.4246144805325,
+            "y": 354.39928456173135
+          }
+        },
+        {
+          "id": "TrafficLight-Button",
+          "type": "Debug.TriggerButton",
+          "config": {
+            "label": "Trigger",
+            "mode": "pushbutton"
+          },
+          "position": {
+            "x": 559.5549505993125,
+            "y": 419.087803326963
+          }
+        },
+        {
+          "id": "sources-timer-1",
+          "type": "Sources.Timer",
+          "config": {
+            "autostart": false,
+            "intervalMs": 2000,
+            "repeat": false
+          },
+          "position": {
+            "x": 807.4112998679793,
+            "y": 211.23497654726793
+          }
+        },
+        {
+          "id": "sources-timer-1-copy1",
+          "type": "Sources.Timer",
+          "config": {
+            "autostart": false,
+            "intervalMs": 2000,
+            "repeat": false
+          },
+          "position": {
+            "x": 544.1891588898427,
+            "y": 585.4291052974157
+          }
+        },
+        {
+          "id": "sources-timer-2",
+          "type": "Sources.Timer",
+          "config": {
+            "autostart": false,
+            "intervalMs": 2000,
+            "repeat": false
+          },
+          "position": {
+            "x": 824.4105315598248,
+            "y": 713.4280524587549
+          }
+        },
+        {
+          "id": "note-1",
+          "type": "Note",
+          "config": {
+            "text": "A finite state machine whose boolean trigger inputs drive transitions, exposing state, per-state active, transition, and changed outputs."
+          },
+          "position": {
+            "x": 1244.9278366233698,
+            "y": 703.106511545649
+          },
+          "width": 221,
+          "height": 110
+        }
+      ],
+      "version": "1.0"
+    }
+  },
+  "nodes": [
+    {
+      "config": {
+        "initial": "Green",
+        "states": [
+          {
+            "name": "Green",
+            "position": {
+              "x": 40,
+              "y": 80
+            }
+          },
+          {
+            "name": "Yellow",
+            "position": {
+              "x": 260,
+              "y": 80
+            }
+          },
+          {
+            "name": "Red",
+            "position": {
+              "x": 480,
+              "y": 80
+            }
+          }
+        ],
+        "transitions": [
+          {
+            "from": "Green",
+            "to": "Yellow",
+            "trigger": "turnYellow",
+            "position": {
+              "x": 168,
+              "y": -25
+            }
+          },
+          {
+            "from": "Yellow",
+            "to": "Red",
+            "trigger": "turnRed",
+            "position": {
+              "x": 390,
+              "y": -22.5
+            }
+          },
+          {
+            "from": "Yellow",
+            "to": "Green",
+            "trigger": "endYellow",
+            "position": {
+              "x": 150,
+              "y": 200
+            }
+          },
+          {
+            "from": "Red",
+            "to": "Yellow",
+            "trigger": "endRed",
+            "position": {
+              "x": 370,
+              "y": 200
+            }
+          }
+        ]
+      },
+      "id": "fsm",
+      "position": {
+        "x": 1097.7942259751305,
+        "y": 283.7053162720716
+      },
+      "type": "Flow.StateMachine",
+      "expandedGroups": [
+        "out:active"
+      ]
+    },
+    {
+      "id": "debug-valuedisplay-1",
+      "type": "Debug.ValueDisplay",
+      "config": {
+        "fields": [],
+        "inputType": "flowboard::String"
+      },
+      "position": {
+        "x": 1590.0071961324825,
+        "y": 425.7465040344998
+      },
+      "width": 219,
+      "height": 110
+    },
+    {
+      "id": "manipulate-string-1",
+      "type": "Manipulate.String",
+      "config": {
+        "find": "",
+        "mode": "prepend",
+        "replace": "",
+        "text": "The traffic light is "
+      },
+      "position": {
+        "x": 1336.4246144805325,
+        "y": 354.39928456173135
+      }
+    },
+    {
+      "id": "TrafficLight-Button",
+      "type": "Debug.TriggerButton",
+      "config": {
+        "label": "Trigger",
+        "mode": "pushbutton"
+      },
+      "position": {
+        "x": 559.5549505993125,
+        "y": 419.087803326963
+      }
+    },
+    {
+      "id": "sources-timer-1",
+      "type": "Sources.Timer",
+      "config": {
+        "autostart": false,
+        "intervalMs": 2000,
+        "repeat": false
+      },
+      "position": {
+        "x": 807.4112998679793,
+        "y": 211.23497654726793
+      }
+    },
+    {
+      "id": "sources-timer-1-copy1",
+      "type": "Sources.Timer",
+      "config": {
+        "autostart": false,
+        "intervalMs": 2000,
+        "repeat": false
+      },
+      "position": {
+        "x": 544.1891588898427,
+        "y": 585.4291052974157
+      }
+    },
+    {
+      "id": "sources-timer-2",
+      "type": "Sources.Timer",
+      "config": {
+        "autostart": false,
+        "intervalMs": 2000,
+        "repeat": false
+      },
+      "position": {
+        "x": 824.4105315598248,
+        "y": 713.4280524587549
+      }
+    }
+  ],
+  "version": "1.0"
+}

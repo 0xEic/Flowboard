@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+
+/* Make React Flow's persistent multi-selection bounding box invisible (it
+   lingers after a rubber-band selection) WITHOUT removing the element — keeping
+   it preserves group selection/drag. Selected nodes still show their own ring. */
+.react-flow__nodesselection-rect {
+  border: none !important;
+  background: transparent !important;
+}

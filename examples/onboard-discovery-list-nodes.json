@@ -1,0 +1,869 @@
+{
+  "edges": [
+    {
+      "capacity": 16,
+      "from": "tick.tick",
+      "policy": "drop_oldest",
+      "to": "discover.trigger"
+    },
+    {
+      "capacity": 16,
+      "from": "discover.out",
+      "policy": "drop_oldest",
+      "to": "count.in"
+    },
+    {
+      "capacity": 256,
+      "from": "discover.out",
+      "policy": "drop_oldest",
+      "to": "debug-valuedisplay-1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "transform-list-sort-1.out",
+      "policy": "drop_oldest",
+      "to": "debug-valuedisplay-1-copy1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "discover.out",
+      "policy": "drop_oldest",
+      "to": "transform-list-mapfield-1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "transform-list-mapfield-1.out",
+      "policy": "drop_oldest",
+      "to": "transform-list-sort-1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "transform-list-filter-1.out",
+      "policy": "drop_oldest",
+      "to": "debug-valuedisplay-1-copy2.in"
+    },
+    {
+      "capacity": 256,
+      "from": "discover.out",
+      "policy": "drop_oldest",
+      "to": "transform-list-filter-1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "discover.out",
+      "policy": "drop_oldest",
+      "to": "transform-list-find-1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "transform-list-find-1.value",
+      "policy": "drop_oldest",
+      "to": "debug-valuedisplay-1-copy3.in"
+    },
+    {
+      "capacity": 256,
+      "from": "discover.out",
+      "policy": "drop_oldest",
+      "to": "transform-list-getat-1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "transform-list-getat-1.value",
+      "policy": "drop_oldest",
+      "to": "debug-valuedisplay-1-copy4.in"
+    },
+    {
+      "capacity": 256,
+      "from": "discover.out",
+      "policy": "drop_oldest",
+      "to": "transform-list-combine-1.a"
+    },
+    {
+      "capacity": 256,
+      "from": "transform-list-combine-1.out",
+      "policy": "drop_oldest",
+      "to": "debug-valuedisplay-1-copy5.in"
+    },
+    {
+      "capacity": 256,
+      "from": "transform-list-mapfield-1.out",
+      "policy": "drop_oldest",
+      "to": "transform-list-combine-1.b"
+    }
+  ],
+  "metadata": {
+    "description": "OnboardApi.Discovery enumerates the open Service/Client endpoints on a domain. A Timer re-queries every second; the resulting List (interfaceType, direction, serviceName, domainId) is logged and counted. The Mount/Alert nodes exist only to populate the discovery list on domain 1.",
+    "name": "onboard-discovery-list-nodes",
+    "authoring": {
+      "edges": [
+        {
+          "capacity": 16,
+          "from": "tick.tick",
+          "policy": "drop_oldest",
+          "to": "discover.trigger"
+        },
+        {
+          "capacity": 16,
+          "from": "discover.out",
+          "policy": "drop_oldest",
+          "to": "count.in"
+        },
+        {
+          "capacity": 256,
+          "from": "discover.out",
+          "policy": "drop_oldest",
+          "to": "debug-valuedisplay-1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "transform-list-sort-1.out",
+          "policy": "drop_oldest",
+          "to": "debug-valuedisplay-1-copy1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "discover.out",
+          "policy": "drop_oldest",
+          "to": "transform-list-mapfield-1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "transform-list-mapfield-1.out",
+          "policy": "drop_oldest",
+          "to": "transform-list-sort-1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "transform-list-filter-1.out",
+          "policy": "drop_oldest",
+          "to": "debug-valuedisplay-1-copy2.in"
+        },
+        {
+          "capacity": 256,
+          "from": "discover.out",
+          "policy": "drop_oldest",
+          "to": "transform-list-filter-1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "discover.out",
+          "policy": "drop_oldest",
+          "to": "transform-list-find-1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "transform-list-find-1.value",
+          "policy": "drop_oldest",
+          "to": "debug-valuedisplay-1-copy3.in"
+        },
+        {
+          "capacity": 256,
+          "from": "discover.out",
+          "policy": "drop_oldest",
+          "to": "transform-list-getat-1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "transform-list-getat-1.value",
+          "policy": "drop_oldest",
+          "to": "debug-valuedisplay-1-copy4.in"
+        },
+        {
+          "capacity": 256,
+          "from": "discover.out",
+          "policy": "drop_oldest",
+          "to": "transform-list-combine-1.a"
+        },
+        {
+          "capacity": 256,
+          "from": "transform-list-combine-1.out",
+          "policy": "drop_oldest",
+          "to": "debug-valuedisplay-1-copy5.in"
+        },
+        {
+          "capacity": 256,
+          "from": "transform-list-mapfield-1.out",
+          "policy": "drop_oldest",
+          "to": "transform-list-combine-1.b"
+        }
+      ],
+      "metadata": {
+        "description": "OnboardApi.Discovery enumerates the open Service/Client endpoints on a domain. A Timer re-queries every second; the resulting List (interfaceType, direction, serviceName, domainId) is logged and counted. The Mount/Alert nodes exist only to populate the discovery list on domain 1.",
+        "name": "onboard-discovery-list-nodes"
+      },
+      "nodes": [
+        {
+          "config": {
+            "domainId": 1,
+            "serviceName": "MainMount"
+          },
+          "expandedGroups": [
+            "in:ReportMountPosition"
+          ],
+          "id": "mount-svc",
+          "position": {
+            "x": -62.05469680928206,
+            "y": 993.2752827299604
+          },
+          "type": "M_Mount.Service"
+        },
+        {
+          "config": {
+            "domainId": 1,
+            "serviceName": "Gunner"
+          },
+          "id": "mount-cli",
+          "position": {
+            "x": -63.68358359893989,
+            "y": 1048.0893350632991
+          },
+          "type": "M_Mount.Client"
+        },
+        {
+          "config": {
+            "domainId": 1,
+            "serviceName": "AlertManager"
+          },
+          "id": "alert-svc",
+          "position": {
+            "x": -65.9870008675232,
+            "y": 1126.4586036717194
+          },
+          "type": "M_Alert.Service"
+        },
+        {
+          "config": {
+            "autostart": true,
+            "intervalMs": 1000,
+            "repeat": true
+          },
+          "id": "tick",
+          "position": {
+            "x": -82,
+            "y": 310
+          },
+          "type": "Sources.Timer"
+        },
+        {
+          "config": {
+            "allDomains": false,
+            "domainId": 1,
+            "source": "both"
+          },
+          "id": "discover",
+          "position": {
+            "x": 197.15666418323076,
+            "y": 422.75738599964603
+          },
+          "type": "OnboardApi.Discovery"
+        },
+        {
+          "config": {},
+          "id": "count",
+          "position": {
+            "x": 481.1698053295145,
+            "y": 550.250160423086
+          },
+          "type": "Transform.List.Size"
+        },
+        {
+          "config": {
+            "fields": [
+              "serviceName",
+              "hostName",
+              "interfaceType",
+              "procName",
+              "domainId",
+              "direction"
+            ],
+            "inputType": "flowboard::List"
+          },
+          "height": 140,
+          "id": "debug-valuedisplay-1",
+          "position": {
+            "x": 711.0718415729207,
+            "y": 308.0330522728306
+          },
+          "type": "Debug.ValueDisplay",
+          "width": 728
+        },
+        {
+          "config": {
+            "text": "Enumerates the open OnboardAPI Service/Client endpoints on a DDS domain, emitting them as a list."
+          },
+          "height": 86,
+          "id": "note-1",
+          "position": {
+            "x": 239.8749999999999,
+            "y": 306.225
+          },
+          "type": "Note",
+          "width": 234
+        },
+        {
+          "config": {
+            "fields": [
+              "serviceName",
+              "hostName",
+              "interfaceType",
+              "procName",
+              "domainId",
+              "direction"
+            ],
+            "inputType": "flowboard::List"
+          },
+          "height": 135,
+          "id": "debug-valuedisplay-1-copy1",
+          "position": {
+            "x": 737.6145362053203,
+            "y": 766.6597639422367
+          },
+          "type": "Debug.ValueDisplay",
+          "width": 751
+        },
+        {
+          "config": {
+            "ascending": true,
+            "field": "serviceName"
+          },
+          "id": "transform-list-sort-1",
+          "position": {
+            "x": 429.1163208668387,
+            "y": 726.4712313838147
+          },
+          "type": "Transform.List.Sort"
+        },
+        {
+          "config": {
+            "field": "interfaceType",
+            "op": "eq",
+            "value": "Mount"
+          },
+          "id": "transform-list-filter-1",
+          "position": {
+            "x": 427.61559350541245,
+            "y": 954.4854832562729
+          },
+          "type": "Transform.List.Filter"
+        },
+        {
+          "config": {
+            "field": "serviceName",
+            "op": "eq",
+            "value": "Gunner"
+          },
+          "id": "transform-list-find-1",
+          "position": {
+            "x": 417.5188636106668,
+            "y": 1234.5903303894838
+          },
+          "type": "Transform.List.Find"
+        },
+        {
+          "config": {
+            "index": 0
+          },
+          "id": "transform-list-getat-1",
+          "position": {
+            "x": 407.34387359371635,
+            "y": 1494.5697306062461
+          },
+          "type": "Transform.List.GetAt"
+        },
+        {
+          "config": {},
+          "id": "transform-list-combine-1",
+          "position": {
+            "x": 389.0321657665394,
+            "y": 1768.4214738781804
+          },
+          "type": "Transform.List.Combine"
+        },
+        {
+          "config": {
+            "field": "serviceName",
+            "find": "Gun",
+            "formula": "x",
+            "mode": "replace",
+            "replace": "Xun",
+            "text": "",
+            "valueType": "string"
+          },
+          "id": "transform-list-mapfield-1",
+          "position": {
+            "x": 175.09757277353935,
+            "y": 718.3974553256925
+          },
+          "type": "Transform.List.MapField"
+        },
+        {
+          "config": {
+            "fields": [
+              "serviceName",
+              "hostName",
+              "interfaceType",
+              "procName",
+              "domainId",
+              "direction"
+            ],
+            "inputType": "flowboard::List"
+          },
+          "height": 135,
+          "id": "debug-valuedisplay-1-copy2",
+          "position": {
+            "x": 739.5442047969195,
+            "y": 948.2338088672269
+          },
+          "type": "Debug.ValueDisplay",
+          "width": 751
+        },
+        {
+          "config": {
+            "fields": [
+              "serviceName",
+              "hostName",
+              "interfaceType",
+              "procName",
+              "domainId",
+              "direction"
+            ],
+            "inputType": "flowboard::List"
+          },
+          "height": 110,
+          "id": "debug-valuedisplay-1-copy3",
+          "position": {
+            "x": 752.4498776624627,
+            "y": 1230.8308310471923
+          },
+          "type": "Debug.ValueDisplay",
+          "width": 741
+        },
+        {
+          "config": {
+            "fields": [
+              "serviceName",
+              "hostName",
+              "interfaceType",
+              "procName",
+              "domainId",
+              "direction"
+            ],
+            "inputType": "flowboard::List"
+          },
+          "height": 110,
+          "id": "debug-valuedisplay-1-copy4",
+          "position": {
+            "x": 748.162333406168,
+            "y": 1494.8788279969049
+          },
+          "type": "Debug.ValueDisplay",
+          "width": 741
+        },
+        {
+          "config": {
+            "fields": [
+              "serviceName",
+              "hostName",
+              "interfaceType",
+              "procName",
+              "domainId",
+              "direction"
+            ],
+            "inputType": "flowboard::List"
+          },
+          "height": 193,
+          "id": "debug-valuedisplay-1-copy5",
+          "position": {
+            "x": 730.7624593998785,
+            "y": 1805.1076244419892
+          },
+          "type": "Debug.ValueDisplay",
+          "width": 747
+        },
+        {
+          "config": {
+            "text": "Emits the element count of a list plus an isEmpty boolean."
+          },
+          "height": 60,
+          "id": "note-1-copy1",
+          "position": {
+            "x": 714.0037323264013,
+            "y": 568.3040544904034
+          },
+          "type": "Note",
+          "width": 238
+        },
+        {
+          "config": {
+            "text": "Updates one field (dot path) from every element into a new list."
+          },
+          "height": 60,
+          "id": "note-1-copy2",
+          "position": {
+            "x": 37.61968558316437,
+            "y": 622.6317354252681
+          },
+          "type": "Note",
+          "width": 242
+        },
+        {
+          "config": {
+            "text": "Sorts list elements by a field dot path (ascending/descending)."
+          },
+          "height": 65,
+          "id": "note-1-copy3",
+          "position": {
+            "x": 474.49644747891773,
+            "y": 837.4294428306177
+          },
+          "type": "Note",
+          "width": 234
+        },
+        {
+          "config": {
+            "text": "Keeps only the list elements whose field (dot path) matches the configured predicate."
+          },
+          "height": 86,
+          "id": "note-1-copy4",
+          "position": {
+            "x": 480.1100132352424,
+            "y": 1065.122063077346
+          },
+          "type": "Note",
+          "width": 234
+        },
+        {
+          "config": {
+            "text": "Emits the first element matching the predicate (as a single-element list) plus an isFound boolean."
+          },
+          "height": 86,
+          "id": "note-1-copy5",
+          "position": {
+            "x": 491.454651365513,
+            "y": 1358.7220156244518
+          },
+          "type": "Note",
+          "width": 234
+        },
+        {
+          "config": {
+            "text": "Emits the element at a configured index (as a single-element list) plus an isPresent boolean."
+          },
+          "height": 86,
+          "id": "note-1-copy6",
+          "position": {
+            "x": 527.1563470850535,
+            "y": 1626.5321424888011
+          },
+          "type": "Note",
+          "width": 234
+        },
+        {
+          "config": {
+            "text": "Concatenates two lists (a then b) into a single list."
+          },
+          "height": 86,
+          "id": "note-1-copy7",
+          "position": {
+            "x": 446.80382723218963,
+            "y": 1901.5061098205829
+          },
+          "type": "Note",
+          "width": 234
+        },
+        {
+          "config": {
+            "text": "Creating some services and clients to fill the list."
+          },
+          "height": 60,
+          "id": "note-1-copy8",
+          "position": {
+            "x": -45.59837045667234,
+            "y": 891.8746303831039
+          },
+          "type": "Note",
+          "width": 246
+        }
+      ],
+      "version": "1.0"
+    }
+  },
+  "nodes": [
+    {
+      "config": {
+        "domainId": 1,
+        "serviceName": "MainMount"
+      },
+      "expandedGroups": [
+        "in:ReportMountPosition"
+      ],
+      "id": "mount-svc",
+      "position": {
+        "x": -62.05469680928206,
+        "y": 993.2752827299604
+      },
+      "type": "M_Mount.Service"
+    },
+    {
+      "config": {
+        "domainId": 1,
+        "serviceName": "Gunner"
+      },
+      "id": "mount-cli",
+      "position": {
+        "x": -63.68358359893989,
+        "y": 1048.0893350632991
+      },
+      "type": "M_Mount.Client"
+    },
+    {
+      "config": {
+        "domainId": 1,
+        "serviceName": "AlertManager"
+      },
+      "id": "alert-svc",
+      "position": {
+        "x": -65.9870008675232,
+        "y": 1126.4586036717194
+      },
+      "type": "M_Alert.Service"
+    },
+    {
+      "config": {
+        "autostart": true,
+        "intervalMs": 1000,
+        "repeat": true
+      },
+      "id": "tick",
+      "position": {
+        "x": -82,
+        "y": 310
+      },
+      "type": "Sources.Timer"
+    },
+    {
+      "config": {
+        "allDomains": false,
+        "domainId": 1,
+        "source": "both"
+      },
+      "id": "discover",
+      "position": {
+        "x": 197.15666418323076,
+        "y": 422.75738599964603
+      },
+      "type": "OnboardApi.Discovery"
+    },
+    {
+      "config": {},
+      "id": "count",
+      "position": {
+        "x": 481.1698053295145,
+        "y": 550.250160423086
+      },
+      "type": "Transform.List.Size"
+    },
+    {
+      "config": {
+        "fields": [
+          "serviceName",
+          "hostName",
+          "interfaceType",
+          "procName",
+          "domainId",
+          "direction"
+        ],
+        "inputType": "flowboard::List"
+      },
+      "height": 140,
+      "id": "debug-valuedisplay-1",
+      "position": {
+        "x": 711.0718415729207,
+        "y": 308.0330522728306
+      },
+      "type": "Debug.ValueDisplay",
+      "width": 728
+    },
+    {
+      "config": {
+        "fields": [
+          "serviceName",
+          "hostName",
+          "interfaceType",
+          "procName",
+          "domainId",
+          "direction"
+        ],
+        "inputType": "flowboard::List"
+      },
+      "height": 135,
+      "id": "debug-valuedisplay-1-copy1",
+      "position": {
+        "x": 737.6145362053203,
+        "y": 766.6597639422367
+      },
+      "type": "Debug.ValueDisplay",
+      "width": 751
+    },
+    {
+      "config": {
+        "ascending": true,
+        "field": "serviceName"
+      },
+      "id": "transform-list-sort-1",
+      "position": {
+        "x": 429.1163208668387,
+        "y": 726.4712313838147
+      },
+      "type": "Transform.List.Sort"
+    },
+    {
+      "config": {
+        "field": "interfaceType",
+        "op": "eq",
+        "value": "Mount"
+      },
+      "id": "transform-list-filter-1",
+      "position": {
+        "x": 427.61559350541245,
+        "y": 954.4854832562729
+      },
+      "type": "Transform.List.Filter"
+    },
+    {
+      "config": {
+        "field": "serviceName",
+        "op": "eq",
+        "value": "Gunner"
+      },
+      "id": "transform-list-find-1",
+      "position": {
+        "x": 417.5188636106668,
+        "y": 1234.5903303894838
+      },
+      "type": "Transform.List.Find"
+    },
+    {
+      "config": {
+        "index": 0
+      },
+      "id": "transform-list-getat-1",
+      "position": {
+        "x": 407.34387359371635,
+        "y": 1494.5697306062461
+      },
+      "type": "Transform.List.GetAt"
+    },
+    {
+      "config": {},
+      "id": "transform-list-combine-1",
+      "position": {
+        "x": 389.0321657665394,
+        "y": 1768.4214738781804
+      },
+      "type": "Transform.List.Combine"
+    },
+    {
+      "config": {
+        "field": "serviceName",
+        "find": "Gun",
+        "formula": "x",
+        "mode": "replace",
+        "replace": "Xun",
+        "text": "",
+        "valueType": "string"
+      },
+      "id": "transform-list-mapfield-1",
+      "position": {
+        "x": 175.09757277353935,
+        "y": 718.3974553256925
+      },
+      "type": "Transform.List.MapField"
+    },
+    {
+      "config": {
+        "fields": [
+          "serviceName",
+          "hostName",
+          "interfaceType",
+          "procName",
+          "domainId",
+          "direction"
+        ],
+        "inputType": "flowboard::List"
+      },
+      "height": 135,
+      "id": "debug-valuedisplay-1-copy2",
+      "position": {
+        "x": 739.5442047969195,
+        "y": 948.2338088672269
+      },
+      "type": "Debug.ValueDisplay",
+      "width": 751
+    },
+    {
+      "config": {
+        "fields": [
+          "serviceName",
+          "hostName",
+          "interfaceType",
+          "procName",
+          "domainId",
+          "direction"
+        ],
+        "inputType": "flowboard::List"
+      },
+      "height": 110,
+      "id": "debug-valuedisplay-1-copy3",
+      "position": {
+        "x": 752.4498776624627,
+        "y": 1230.8308310471923
+      },
+      "type": "Debug.ValueDisplay",
+      "width": 741
+    },
+    {
+      "config": {
+        "fields": [
+          "serviceName",
+          "hostName",
+          "interfaceType",
+          "procName",
+          "domainId",
+          "direction"
+        ],
+        "inputType": "flowboard::List"
+      },
+      "height": 110,
+      "id": "debug-valuedisplay-1-copy4",
+      "position": {
+        "x": 748.162333406168,
+        "y": 1494.8788279969049
+      },
+      "type": "Debug.ValueDisplay",
+      "width": 741
+    },
+    {
+      "config": {
+        "fields": [
+          "serviceName",
+          "hostName",
+          "interfaceType",
+          "procName",
+          "domainId",
+          "direction"
+        ],
+        "inputType": "flowboard::List"
+      },
+      "height": 193,
+      "id": "debug-valuedisplay-1-copy5",
+      "position": {
+        "x": 730.7624593998785,
+        "y": 1805.1076244419892
+      },
+      "type": "Debug.ValueDisplay",
+      "width": 747
+    }
+  ],
+  "version": "1.0"
+}

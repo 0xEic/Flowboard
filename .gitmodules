@@ -1,0 +1,3 @@
+[submodule "external/onboardapi"]
+	path = external/onboardapi
+	url = https://github.com/Rheinmetall/onboardapi

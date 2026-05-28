@@ -1,0 +1,62 @@
+name: Docs
+
+# Build the Doxygen site (API reference + architecture + node reference) and
+# publish it to GitHub Pages. Doxygen is run directly against the sources, so
+# this job needs no C++ build or third-party dependencies.
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; cancel in-progress runs on new pushes.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Doxygen + Graphviz
+        run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
+
+      - name: Configure Doxyfile
+        run: |
+          IN="docs/doxygen $PWD/include $PWD/src $PWD/pipegen \
+$PWD/docs/ARCHITECTURE.md $PWD/docs/NODES.md $PWD/docs/ADDING_A_NODE.md \
+$PWD/docs/ADR-001-backpressure.md $PWD/docs/INTEGRATING_THE_REAL_SDK.md"
+          sed \
+            -e "s|@PROJECT_NAME@|Flowboard|g" \
+            -e "s|@PROJECT_VERSION@|1.0.0|g" \
+            -e "s|@PROJECT_DESCRIPTION@|Configurable pipe-and-filter workflow engine for OnboardAPI|g" \
+            -e "s|@DOXYGEN_OUTPUT_DIR@|$PWD/site|g" \
+            -e "s|@CMAKE_SOURCE_DIR@|$PWD|g" \
+            -e "s|@DOXYGEN_MAINPAGE@|$PWD/docs/doxygen/mainpage.md|g" \
+            -e "s|@DOXYGEN_HAVE_DOT@|YES|g" \
+            -e "s|@DOXYGEN_INPUT@|$IN|g" \
+            docs/Doxyfile.in > Doxyfile.ci
+          doxygen Doxyfile.ci
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/html
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-22.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

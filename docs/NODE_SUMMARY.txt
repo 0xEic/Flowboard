@@ -1,0 +1,71 @@
+Flowboard — Node Reference (one-line summaries)
+================================================
+
+SOURCES
+  Sources.CurrentTime      Emits the current wall-clock time whenever 'trigger' fires, typed per the configured unit (epoch ms/s as Int64, or a formatted String).
+  Sources.TimeSource       Emits a fixed UTC timestamp (epoch milliseconds) assembled from configured discrete date/time fields.
+  Sources.Timer            Emits a 'true' pulse on 'tick' every intervalMs (once if repeat is off), with start/reset inputs and isRunning/timeLeft/timePast status outputs.
+  Sources.Iterator         Steps a value from startValue to endValue by stepSize at a timed cadence, optionally looping or sweeping back and forth (a ramp/sweep generator).
+  Sources.Random           Emits a random value of the configured primitive type on each trigger (min/max for numbers, length + character classes for strings, probability for Bool).
+  Transform.ConstantSource Emits a fixed configured primitive value on 'trigger' (and once on init when auto-trigger is on).
+
+TRANSFORM
+  Transform.Convert        Converts a value from one primitive type to another, including rendering to a human-readable String with configurable decimals.
+  Transform.Extract        Pulls a named field out of an OnboardAPI struct input, emitting it as a scalar, an optional (value + isFilled), or a list.
+  Transform.Inverter       Emits the logical NOT of each boolean received on 'in'.
+  Transform.Derivative     Emits the rate of change (per second, always Double) of a numeric input.
+  Transform.Arithmetic     Combines two numeric inputs a and b with a configured operation (add/subtract/multiply/divide/min/max) into one output of the same type.
+  Transform.NumberHolder   Holds a number of the configured type: 'initValue' sets/resets it, 'increase' adds, 'decrease' subtracts; emits the current value on every change.
+  Manipulate.Number        Applies an arithmetic formula in x (e.g. "x*2+1", "clamp(x,0,100)") to a single numeric input.
+  Manipulate.String        Modifies a string input via a configured mode: replace, set, prepend, or append.
+
+LOGIC & CONDITIONS
+  Transform.Compare        Compares two inputs a and b with a relational or string operator (>, >=, ==, contains, startsWith, …) and emits the boolean result.
+  Transform.Threshold      Emits a boolean that is true when the input satisfies a configured comparison (>, >=, <, <=, ==, !=) against a threshold value.
+  Transform.Filter         Passes its input through to 'out' only while the 'gate' boolean is true (a gated pass-through with a configurable default).
+
+LISTS
+  Transform.List.Build     Assembles a list from N typed item inputs, emitting automatically once all items have a value (and re-emitting on changes), or on an explicit trigger.
+  Transform.List.Constant  Emits a fixed list authored as a JSON array, of any element type (primitive or OnboardAPI struct), re-emitting on 'trigger'.
+  Transform.List.Accumulate Appends each received item into a growing list (optionally capped), emitting the running list on 'trigger' and clearing it on 'reset'.
+  Transform.List.Combine   Concatenates two lists (a then b) into a single list.
+  Transform.List.Filter    Keeps only the list elements whose field (dot path) matches the configured predicate.
+  Transform.List.Find      Emits the first element matching the predicate (as a single-element list) plus an isFound boolean.
+  Transform.List.GetAt     Emits the element at a configured index (as a single-element list) plus an isPresent boolean.
+  Transform.List.MapField  Projects one field (dot path) from every element into a new list.
+  Transform.List.Size      Emits the element count of a list plus an isEmpty boolean.
+  Transform.List.Sort      Sorts list elements by a field dot path (ascending/descending).
+
+TIMING & SYNC
+  Transform.Throttle             Rate-limits a stream, forwarding at most one value per configured interval.
+  Transform.Synchronize          Aligns N input streams, emitting them together (out0..outN) once each has a fresh value, with before/after signal outputs.
+  Transform.KeyValueAccumulator  Maintains a key->value map fed by key/value/isRemoved inputs and emits the accumulated set as a list.
+
+SINKS
+  Sinks.Log                Logs each received value (any type) to the application log with a configurable prefix.
+
+DEBUG
+  Debug.ValueDisplay       Shows the latest value flowing into it directly on the canvas node.
+  Debug.GraphDisplay       Plots an incoming numeric value over time as a live chart on the canvas node.
+  Debug.TriggerButton      A canvas button that emits a 'true' pulse each time it is clicked.
+
+INPUT
+  Input.ButtonHandler      Routes HidJoystick EventButton presses to one bool "isPressed" output per button, matched by button index or name.
+
+FLOW & STRUCTURE
+  Flow.StateMachine        A finite state machine whose boolean trigger inputs drive transitions, exposing state, per-state active, transition, and changed outputs.
+  Flow.Group               A container that packages a subgraph behind boundary ports so it appears as a single node.
+  Group.Input              A group boundary terminal that feeds a value from outside the group to its inner nodes.
+  Group.Output             A group boundary terminal that exposes an inner node's value to outside the group.
+  Note                     A free-text annotation on the canvas with no ports (documentation only).
+
+ONBOARDAPI
+  OnboardApi.Discovery     Enumerates the open OnboardAPI Service/Client endpoints on a DDS domain, emitting them as a list.
+  OnboardApi.DeviceReport  A port-less node that, while the graph runs, opens an OnboardAPI Device service publishing this application's version, build/git identity, dependency versions and runtime status.
+
+
+GENERIC NODE FAMILIES (one entry per OnboardAPI interface/struct — not listed individually)
+--------------------------------------------------------------------------------------------
+  Factory.<Module>::<Type>   Builds an OnboardAPI struct value of that type from one input port per field, emitting the assembled struct when its inputs update or on 'trigger'.
+  M_<Module>.Service         Hosts that OnboardAPI interface as a DDS service on a configured domain/serviceName, surfacing each incoming command as an output port and each report it can publish as input ports.
+  M_<Module>.Client          Connects to that OnboardAPI interface as a DDS client on a configured domain/serviceName, surfacing each report it receives as an output port and each command/request it can send as input ports.

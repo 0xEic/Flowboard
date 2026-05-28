@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: MIT
+module M_Sample
+{
+  struct Inner
+  {
+    string Name;
+    long Value;
+  };
+
+  struct Outer
+  {
+    Inner First;
+    sequence<long> Numbers;
+    string<255> BoundedField;
+  };
+}

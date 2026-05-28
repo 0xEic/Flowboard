@@ -1,0 +1,1329 @@
+{
+  "edges": [
+    {
+      "capacity": 256,
+      "from": "ramp.value",
+      "policy": "drop_oldest",
+      "to": "thr.in"
+    },
+    {
+      "capacity": 256,
+      "from": "thr.out",
+      "policy": "drop_oldest",
+      "to": "filt.gate"
+    },
+    {
+      "capacity": 256,
+      "from": "ramp.value",
+      "policy": "drop_oldest",
+      "to": "filt.in"
+    },
+    {
+      "capacity": 256,
+      "from": "ramp.value",
+      "policy": "drop_oldest",
+      "to": "cmp.a"
+    },
+    {
+      "capacity": 256,
+      "from": "ramp.value",
+      "policy": "drop_oldest",
+      "to": "conv.in"
+    },
+    {
+      "capacity": 256,
+      "from": "conv.out",
+      "policy": "drop_oldest",
+      "to": "label.in"
+    },
+    {
+      "capacity": 256,
+      "from": "label.out",
+      "policy": "drop_oldest",
+      "to": "log-text.in"
+    },
+    {
+      "capacity": 256,
+      "from": "ramp.value",
+      "policy": "drop_oldest",
+      "to": "sources-random-1.trigger"
+    },
+    {
+      "capacity": 256,
+      "from": "ramp.value",
+      "policy": "drop_oldest",
+      "to": "debug-graphdisplay-1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "sources-random-1.out",
+      "policy": "drop_oldest",
+      "to": "debug-graphdisplay-1-copy1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "formula-example.out",
+      "policy": "drop_oldest",
+      "to": "debug-graphdisplay-1-copy2.in"
+    },
+    {
+      "capacity": 256,
+      "from": "filt.out",
+      "policy": "drop_oldest",
+      "to": "debug-graphdisplay-1-copy3.in"
+    },
+    {
+      "capacity": 256,
+      "from": "inv.out",
+      "policy": "drop_oldest",
+      "to": "debug-graphdisplay-1-copy4.in"
+    },
+    {
+      "capacity": 256,
+      "from": "debug-triggerbutton-1.out",
+      "policy": "drop_oldest",
+      "to": "inv.in"
+    },
+    {
+      "capacity": 256,
+      "from": "debug-triggerbutton-1.out",
+      "policy": "drop_oldest",
+      "to": "debug-graphdisplay-1-copy5.in"
+    },
+    {
+      "capacity": 256,
+      "from": "cmp.out",
+      "policy": "drop_oldest",
+      "to": "debug-graphdisplay-1-copy6.in"
+    },
+    {
+      "capacity": 256,
+      "from": "label.out",
+      "policy": "drop_oldest",
+      "to": "debug-valuedisplay-1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "transform-derivative-1.out",
+      "policy": "drop_oldest",
+      "to": "debug-graphdisplay-1-copy7.in"
+    },
+    {
+      "from": "ramp.value",
+      "to": "transform-numberholder-1.increase",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "transform-numberholder-1.value",
+      "to": "debug-graphdisplay-1-copy8.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "transform-numberholder-1.value",
+      "to": "transform-derivative-1.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-random-1.out",
+      "to": "cmp.b",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "ramp.value",
+      "to": "transform-convert-1.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "transform-convert-1.out",
+      "to": "debug-valuedisplay-1-copy1.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "ramp.value",
+      "to": "transform-arithmetic-1.a",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-random-1.out",
+      "to": "transform-arithmetic-1.b",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "transform-arithmetic-1.out",
+      "to": "debug-graphdisplay-2.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "ramp.value",
+      "to": "formula-example.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    }
+  ],
+  "metadata": {
+    "description": "Scalar processing: an Iterator ramp is scaled (Manipulate.Number), formatted (Convert + Manipulate.String), thresholded (Threshold), inverted (Inverter), gated (Filter), and compared to a constant (Compare). Each result is logged.",
+    "name": "transforms-and-logic",
+    "authoring": {
+      "edges": [
+        {
+          "capacity": 256,
+          "from": "ramp.value",
+          "policy": "drop_oldest",
+          "to": "thr.in"
+        },
+        {
+          "capacity": 256,
+          "from": "thr.out",
+          "policy": "drop_oldest",
+          "to": "filt.gate"
+        },
+        {
+          "capacity": 256,
+          "from": "ramp.value",
+          "policy": "drop_oldest",
+          "to": "filt.in"
+        },
+        {
+          "capacity": 256,
+          "from": "ramp.value",
+          "policy": "drop_oldest",
+          "to": "cmp.a"
+        },
+        {
+          "capacity": 256,
+          "from": "ramp.value",
+          "policy": "drop_oldest",
+          "to": "conv.in"
+        },
+        {
+          "capacity": 256,
+          "from": "conv.out",
+          "policy": "drop_oldest",
+          "to": "label.in"
+        },
+        {
+          "capacity": 256,
+          "from": "label.out",
+          "policy": "drop_oldest",
+          "to": "log-text.in"
+        },
+        {
+          "capacity": 256,
+          "from": "ramp.value",
+          "policy": "drop_oldest",
+          "to": "sources-random-1.trigger"
+        },
+        {
+          "capacity": 256,
+          "from": "ramp.value",
+          "policy": "drop_oldest",
+          "to": "debug-graphdisplay-1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "sources-random-1.out",
+          "policy": "drop_oldest",
+          "to": "debug-graphdisplay-1-copy1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "formula-example.out",
+          "policy": "drop_oldest",
+          "to": "debug-graphdisplay-1-copy2.in"
+        },
+        {
+          "capacity": 256,
+          "from": "filt.out",
+          "policy": "drop_oldest",
+          "to": "debug-graphdisplay-1-copy3.in"
+        },
+        {
+          "capacity": 256,
+          "from": "inv.out",
+          "policy": "drop_oldest",
+          "to": "debug-graphdisplay-1-copy4.in"
+        },
+        {
+          "capacity": 256,
+          "from": "debug-triggerbutton-1.out",
+          "policy": "drop_oldest",
+          "to": "inv.in"
+        },
+        {
+          "capacity": 256,
+          "from": "debug-triggerbutton-1.out",
+          "policy": "drop_oldest",
+          "to": "debug-graphdisplay-1-copy5.in"
+        },
+        {
+          "capacity": 256,
+          "from": "cmp.out",
+          "policy": "drop_oldest",
+          "to": "debug-graphdisplay-1-copy6.in"
+        },
+        {
+          "capacity": 256,
+          "from": "label.out",
+          "policy": "drop_oldest",
+          "to": "debug-valuedisplay-1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "transform-derivative-1.out",
+          "policy": "drop_oldest",
+          "to": "debug-graphdisplay-1-copy7.in"
+        },
+        {
+          "from": "ramp.value",
+          "to": "transform-numberholder-1.increase",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "transform-numberholder-1.value",
+          "to": "debug-graphdisplay-1-copy8.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "transform-numberholder-1.value",
+          "to": "transform-derivative-1.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-random-1.out",
+          "to": "cmp.b",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "ramp.value",
+          "to": "transform-convert-1.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "transform-convert-1.out",
+          "to": "debug-valuedisplay-1-copy1.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "ramp.value",
+          "to": "transform-arithmetic-1.a",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-random-1.out",
+          "to": "transform-arithmetic-1.b",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "transform-arithmetic-1.out",
+          "to": "debug-graphdisplay-2.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "ramp.value",
+          "to": "formula-example.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        }
+      ],
+      "metadata": {
+        "description": "Scalar processing: an Iterator ramp is scaled (Manipulate.Number), formatted (Convert + Manipulate.String), thresholded (Threshold), inverted (Inverter), gated (Filter), and compared to a constant (Compare). Each result is logged.",
+        "name": "transforms-and-logic"
+      },
+      "nodes": [
+        {
+          "config": {
+            "autoReverse": false,
+            "autostart": false,
+            "endValue": 10,
+            "loop": true,
+            "specialEndEndValue": "linear",
+            "specialEndStartValue": "linear",
+            "specialStartEndValue": "linear",
+            "specialStartStartValue": "linear",
+            "startValue": 0,
+            "stepSize": 1,
+            "timeBetweenStepsMs": 500,
+            "valueType": "flowboard::Int64",
+            "defaults": {
+              "start": true
+            }
+          },
+          "id": "ramp",
+          "position": {
+            "x": -157.21076851954928,
+            "y": 46.463454763243845
+          },
+          "type": "Sources.Iterator"
+        },
+        {
+          "config": {
+            "formula": "x ^ 2 + 1",
+            "valueType": "flowboard::Int64"
+          },
+          "id": "formula-example",
+          "position": {
+            "x": 340.62295298926506,
+            "y": -130.50522169334056
+          },
+          "type": "Manipulate.Number"
+        },
+        {
+          "config": {
+            "inputType": "flowboard::Int64",
+            "op": ">",
+            "value": 5
+          },
+          "id": "thr",
+          "position": {
+            "x": 485.26195891982184,
+            "y": 94.48001728892277
+          },
+          "type": "Transform.Threshold"
+        },
+        {
+          "config": {},
+          "id": "inv",
+          "position": {
+            "x": 1666.5321486472596,
+            "y": -20.782762474848028
+          },
+          "type": "Transform.Inverter"
+        },
+        {
+          "config": {
+            "closedBehavior": "default",
+            "defaultValue": 0,
+            "inputType": "flowboard::Int64"
+          },
+          "id": "filt",
+          "position": {
+            "x": 791.5498032435717,
+            "y": 134.7121556762504
+          },
+          "type": "Transform.Filter"
+        },
+        {
+          "config": {
+            "defaults": {
+              "b": 0
+            },
+            "inputType": "flowboard::Int64",
+            "op": ">"
+          },
+          "id": "cmp",
+          "position": {
+            "x": 988.7380410801779,
+            "y": 755.121556762504
+          },
+          "type": "Transform.Compare"
+        },
+        {
+          "config": {
+            "decimals": 1,
+            "inputType": "flowboard::Int64",
+            "mode": "convert",
+            "outputType": "flowboard::String",
+            "template": "ramp={value}"
+          },
+          "id": "conv",
+          "position": {
+            "x": 1188.8486227050016,
+            "y": 431.5019675642834
+          },
+          "type": "Transform.Convert"
+        },
+        {
+          "config": {
+            "find": "",
+            "mode": "prepend",
+            "replace": "",
+            "text": "[telemetry] ",
+            "defaults": {
+              "in": "Manipulate.Number"
+            }
+          },
+          "id": "label",
+          "position": {
+            "x": 1481.136467028751,
+            "y": 456.0776562117826
+          },
+          "type": "Manipulate.String"
+        },
+        {
+          "config": {
+            "inputType": "flowboard::String",
+            "prefix": "ExampleLogNode: "
+          },
+          "id": "log-text",
+          "position": {
+            "x": 1799.247048653575,
+            "y": 425.30275458999677
+          },
+          "type": "Sinks.Log"
+        },
+        {
+          "config": {
+            "allowDigits": false,
+            "allowLowercase": true,
+            "allowSymbols": false,
+            "allowUppercase": false,
+            "autoTriggerOnInit": true,
+            "length": 8,
+            "max": 10,
+            "min": 0,
+            "outputType": "flowboard::Int64",
+            "trueProbability": 0.5
+          },
+          "id": "sources-random-1",
+          "position": {
+            "x": 189.65087845779954,
+            "y": 834.1770875725247
+          },
+          "type": "Sources.Random"
+        },
+        {
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Int64",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "id": "debug-graphdisplay-1",
+          "position": {
+            "x": 526.3852089462899,
+            "y": 1133.2548955268549
+          },
+          "type": "Debug.GraphDisplay"
+        },
+        {
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Int64",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "id": "debug-graphdisplay-1-copy1",
+          "position": {
+            "x": 521.2189153284628,
+            "y": 944.8515225341602
+          },
+          "type": "Debug.GraphDisplay"
+        },
+        {
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Int64",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "id": "debug-graphdisplay-1-copy2",
+          "position": {
+            "x": 627.151736561766,
+            "y": -159.0612358254656
+          },
+          "type": "Debug.GraphDisplay"
+        },
+        {
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Int64",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "id": "debug-graphdisplay-1-copy3",
+          "position": {
+            "x": 1068.1479459911034,
+            "y": 128.65516156710476
+          },
+          "type": "Debug.GraphDisplay"
+        },
+        {
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Bool",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "id": "debug-graphdisplay-1-copy4",
+          "position": {
+            "x": 1954.8412051188227,
+            "y": -42.199459062631036
+          },
+          "type": "Debug.GraphDisplay"
+        },
+        {
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Bool",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "id": "debug-graphdisplay-1-copy5",
+          "position": {
+            "x": 1951.8302299811423,
+            "y": 143.4828760811248
+          },
+          "type": "Debug.GraphDisplay"
+        },
+        {
+          "config": {
+            "label": "Trigger",
+            "mode": "switch"
+          },
+          "id": "debug-triggerbutton-1",
+          "position": {
+            "x": 1392.9647175120097,
+            "y": 119.03293123703213
+          },
+          "type": "Debug.TriggerButton"
+        },
+        {
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Bool",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "id": "debug-graphdisplay-1-copy6",
+          "position": {
+            "x": 1318.520175112325,
+            "y": 856.9143696324815
+          },
+          "type": "Debug.GraphDisplay"
+        },
+        {
+          "config": {
+            "fields": [],
+            "inputType": "flowboard::String"
+          },
+          "height": 110,
+          "id": "debug-valuedisplay-1",
+          "position": {
+            "x": 1793.8831710676357,
+            "y": 564.9258818238472
+          },
+          "type": "Debug.ValueDisplay",
+          "width": 204
+        },
+        {
+          "config": {
+            "inputType": "flowboard::Int64"
+          },
+          "id": "transform-derivative-1",
+          "position": {
+            "x": 1100.5889774985346,
+            "y": 1303.7952213859317
+          },
+          "type": "Transform.Derivative"
+        },
+        {
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Double",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "id": "debug-graphdisplay-1-copy7",
+          "position": {
+            "x": 1348.0482061701255,
+            "y": 1373.3766173793806
+          },
+          "type": "Debug.GraphDisplay"
+        },
+        {
+          "id": "transform-numberholder-1",
+          "type": "Transform.NumberHolder",
+          "config": {
+            "emitOnInit": true,
+            "initValue": 0,
+            "valueType": "flowboard::Int64"
+          },
+          "position": {
+            "x": 1025.5798873291978,
+            "y": 965.4224863887438
+          }
+        },
+        {
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Int64",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "id": "debug-graphdisplay-1-copy8",
+          "position": {
+            "x": 1343.365912383863,
+            "y": 1160.0765855854454
+          },
+          "type": "Debug.GraphDisplay"
+        },
+        {
+          "id": "transform-convert-1",
+          "type": "Transform.Convert",
+          "config": {
+            "inputType": "flowboard::Int64",
+            "mode": "lookup",
+            "outputType": "flowboard::String",
+            "template": "{value}",
+            "mappings": [
+              {
+                "when": 1,
+                "value": "one"
+              },
+              {
+                "when": 2,
+                "value": "two"
+              },
+              {
+                "when": 3,
+                "value": "three"
+              },
+              {
+                "when": 4,
+                "value": "four"
+              },
+              {
+                "when": 0,
+                "value": "zero"
+              }
+            ],
+            "fallback": "Above four"
+          },
+          "position": {
+            "x": 1191.7593750000005,
+            "y": 575.3124999999997
+          }
+        },
+        {
+          "config": {
+            "fields": [],
+            "inputType": "flowboard::String"
+          },
+          "height": 110,
+          "id": "debug-valuedisplay-1-copy1",
+          "position": {
+            "x": 1791.3862960676354,
+            "y": 716.8602568238473
+          },
+          "type": "Debug.ValueDisplay",
+          "width": 204
+        },
+        {
+          "id": "transform-arithmetic-1",
+          "type": "Transform.Arithmetic",
+          "config": {
+            "inputType": "flowboard::Int64",
+            "op": "multiply"
+          },
+          "position": {
+            "x": 121.02330667227204,
+            "y": 1095.6490897482654
+          }
+        },
+        {
+          "id": "debug-graphdisplay-2",
+          "type": "Debug.GraphDisplay",
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Int64",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "position": {
+            "x": 518.3454551001145,
+            "y": 1318.1364880076724
+          }
+        },
+        {
+          "id": "note-1",
+          "type": "Note",
+          "config": {
+            "text": "Applies an arithmetic formula in x (e.g. \"x*2+1\") to a single numeric input."
+          },
+          "position": {
+            "x": 111.81521829963663,
+            "y": -191.44230922304257
+          },
+          "width": 208,
+          "height": 76
+        },
+        {
+          "id": "note-1-copy1",
+          "type": "Note",
+          "config": {
+            "text": "Emits a boolean that is true when the input satisfies a configured comparison (>, >=, <, <=, ==, !=) against a threshold value."
+          },
+          "position": {
+            "x": 381.8152182996366,
+            "y": 244.55769077695743
+          },
+          "width": 216,
+          "height": 84
+        },
+        {
+          "id": "note-1-copy2",
+          "type": "Note",
+          "config": {
+            "text": "Passes its input through to 'out' only while the 'gate' boolean is true (a gated pass-through with a configurable default)."
+          },
+          "position": {
+            "x": 755.8152182996366,
+            "y": 324.55769077695743
+          },
+          "width": 212,
+          "height": 90
+        },
+        {
+          "id": "note-1-copy3",
+          "type": "Note",
+          "config": {
+            "text": "Inverter emits the logical NOT of each boolean received on 'in'."
+          },
+          "position": {
+            "x": 1663.0152182996367,
+            "y": -97.44230922304257
+          },
+          "width": 198,
+          "height": 60
+        },
+        {
+          "id": "note-1-copy4",
+          "type": "Note",
+          "config": {
+            "text": "Converts a value from one primitive type to another, including rendering to a human-readable String with configurable decimals."
+          },
+          "position": {
+            "x": 959.0152182996367,
+            "y": 510.55769077695743
+          },
+          "width": 210,
+          "height": 92
+        },
+        {
+          "id": "note-1-copy5",
+          "type": "Note",
+          "config": {
+            "text": "Modifies a string input via a configured mode: replace, set, prepend, or append."
+          },
+          "position": {
+            "x": 1479.0152182996367,
+            "y": 358.55769077695743
+          },
+          "width": 196,
+          "height": 82
+        },
+        {
+          "id": "note-1-copy6",
+          "type": "Note",
+          "config": {
+            "text": "Compares two inputs a and b with a relational or string operator (>, >=, ==, contains, startsWith, …) and emits the boolean result."
+          },
+          "position": {
+            "x": 787.0152182996367,
+            "y": 684.5576907769574
+          },
+          "width": 188,
+          "height": 102
+        },
+        {
+          "id": "note-1-copy7",
+          "type": "Note",
+          "config": {
+            "text": "Combines two numeric inputs a and b with a configured operation (add/subtract/multiply/divide/min/max) into one output of the same type."
+          },
+          "position": {
+            "x": 119.01521829963667,
+            "y": 1266.5576907769573
+          },
+          "width": 236,
+          "height": 90
+        },
+        {
+          "id": "note-1-copy8",
+          "type": "Note",
+          "config": {
+            "text": "Emits the rate of change (per second) of a numeric input."
+          },
+          "position": {
+            "x": 1063.0152182996367,
+            "y": 1448.5576907769573
+          },
+          "width": 244,
+          "height": 60
+        },
+        {
+          "id": "note-1-copy9",
+          "type": "Note",
+          "config": {
+            "text": "NumberHolder holds a single number of a configurable type, settable/resettable via its initValue input and adjustable via increase/decrease inputs, emitting the current value on value after every change."
+          },
+          "position": {
+            "x": 837.0152182996367,
+            "y": 1186.5576907769573
+          },
+          "width": 242,
+          "height": 106
+        },
+        {
+          "id": "note-2",
+          "type": "Note",
+          "config": {
+            "text": "You can link any value to a Boolean input. In this case, the Boolean value is set to “true” every time the signal is output."
+          },
+          "position": {
+            "x": -110.98478170036333,
+            "y": 750.5576907769573
+          },
+          "width": 234,
+          "height": 86
+        }
+      ],
+      "version": "1.0"
+    }
+  },
+  "nodes": [
+    {
+      "config": {
+        "autoReverse": false,
+        "autostart": false,
+        "endValue": 10,
+        "loop": true,
+        "specialEndEndValue": "linear",
+        "specialEndStartValue": "linear",
+        "specialStartEndValue": "linear",
+        "specialStartStartValue": "linear",
+        "startValue": 0,
+        "stepSize": 1,
+        "timeBetweenStepsMs": 500,
+        "valueType": "flowboard::Int64",
+        "defaults": {
+          "start": true
+        }
+      },
+      "id": "ramp",
+      "position": {
+        "x": -157.21076851954928,
+        "y": 46.463454763243845
+      },
+      "type": "Sources.Iterator"
+    },
+    {
+      "config": {
+        "formula": "x ^ 2 + 1",
+        "valueType": "flowboard::Int64"
+      },
+      "id": "formula-example",
+      "position": {
+        "x": 340.62295298926506,
+        "y": -130.50522169334056
+      },
+      "type": "Manipulate.Number"
+    },
+    {
+      "config": {
+        "inputType": "flowboard::Int64",
+        "op": ">",
+        "value": 5
+      },
+      "id": "thr",
+      "position": {
+        "x": 485.26195891982184,
+        "y": 94.48001728892277
+      },
+      "type": "Transform.Threshold"
+    },
+    {
+      "config": {},
+      "id": "inv",
+      "position": {
+        "x": 1666.5321486472596,
+        "y": -20.782762474848028
+      },
+      "type": "Transform.Inverter"
+    },
+    {
+      "config": {
+        "closedBehavior": "default",
+        "defaultValue": 0,
+        "inputType": "flowboard::Int64"
+      },
+      "id": "filt",
+      "position": {
+        "x": 791.5498032435717,
+        "y": 134.7121556762504
+      },
+      "type": "Transform.Filter"
+    },
+    {
+      "config": {
+        "defaults": {
+          "b": 0
+        },
+        "inputType": "flowboard::Int64",
+        "op": ">"
+      },
+      "id": "cmp",
+      "position": {
+        "x": 988.7380410801779,
+        "y": 755.121556762504
+      },
+      "type": "Transform.Compare"
+    },
+    {
+      "config": {
+        "decimals": 1,
+        "inputType": "flowboard::Int64",
+        "mode": "convert",
+        "outputType": "flowboard::String",
+        "template": "ramp={value}"
+      },
+      "id": "conv",
+      "position": {
+        "x": 1188.8486227050016,
+        "y": 431.5019675642834
+      },
+      "type": "Transform.Convert"
+    },
+    {
+      "config": {
+        "find": "",
+        "mode": "prepend",
+        "replace": "",
+        "text": "[telemetry] ",
+        "defaults": {
+          "in": "Manipulate.Number"
+        }
+      },
+      "id": "label",
+      "position": {
+        "x": 1481.136467028751,
+        "y": 456.0776562117826
+      },
+      "type": "Manipulate.String"
+    },
+    {
+      "config": {
+        "inputType": "flowboard::String",
+        "prefix": "ExampleLogNode: "
+      },
+      "id": "log-text",
+      "position": {
+        "x": 1799.247048653575,
+        "y": 425.30275458999677
+      },
+      "type": "Sinks.Log"
+    },
+    {
+      "config": {
+        "allowDigits": false,
+        "allowLowercase": true,
+        "allowSymbols": false,
+        "allowUppercase": false,
+        "autoTriggerOnInit": true,
+        "length": 8,
+        "max": 10,
+        "min": 0,
+        "outputType": "flowboard::Int64",
+        "trueProbability": 0.5
+      },
+      "id": "sources-random-1",
+      "position": {
+        "x": 189.65087845779954,
+        "y": 834.1770875725247
+      },
+      "type": "Sources.Random"
+    },
+    {
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Int64",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "id": "debug-graphdisplay-1",
+      "position": {
+        "x": 526.3852089462899,
+        "y": 1133.2548955268549
+      },
+      "type": "Debug.GraphDisplay"
+    },
+    {
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Int64",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "id": "debug-graphdisplay-1-copy1",
+      "position": {
+        "x": 521.2189153284628,
+        "y": 944.8515225341602
+      },
+      "type": "Debug.GraphDisplay"
+    },
+    {
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Int64",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "id": "debug-graphdisplay-1-copy2",
+      "position": {
+        "x": 627.151736561766,
+        "y": -159.0612358254656
+      },
+      "type": "Debug.GraphDisplay"
+    },
+    {
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Int64",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "id": "debug-graphdisplay-1-copy3",
+      "position": {
+        "x": 1068.1479459911034,
+        "y": 128.65516156710476
+      },
+      "type": "Debug.GraphDisplay"
+    },
+    {
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Bool",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "id": "debug-graphdisplay-1-copy4",
+      "position": {
+        "x": 1954.8412051188227,
+        "y": -42.199459062631036
+      },
+      "type": "Debug.GraphDisplay"
+    },
+    {
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Bool",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "id": "debug-graphdisplay-1-copy5",
+      "position": {
+        "x": 1951.8302299811423,
+        "y": 143.4828760811248
+      },
+      "type": "Debug.GraphDisplay"
+    },
+    {
+      "config": {
+        "label": "Trigger",
+        "mode": "switch"
+      },
+      "id": "debug-triggerbutton-1",
+      "position": {
+        "x": 1392.9647175120097,
+        "y": 119.03293123703213
+      },
+      "type": "Debug.TriggerButton"
+    },
+    {
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Bool",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "id": "debug-graphdisplay-1-copy6",
+      "position": {
+        "x": 1318.520175112325,
+        "y": 856.9143696324815
+      },
+      "type": "Debug.GraphDisplay"
+    },
+    {
+      "config": {
+        "fields": [],
+        "inputType": "flowboard::String"
+      },
+      "height": 110,
+      "id": "debug-valuedisplay-1",
+      "position": {
+        "x": 1793.8831710676357,
+        "y": 564.9258818238472
+      },
+      "type": "Debug.ValueDisplay",
+      "width": 204
+    },
+    {
+      "config": {
+        "inputType": "flowboard::Int64"
+      },
+      "id": "transform-derivative-1",
+      "position": {
+        "x": 1100.5889774985346,
+        "y": 1303.7952213859317
+      },
+      "type": "Transform.Derivative"
+    },
+    {
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Double",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "id": "debug-graphdisplay-1-copy7",
+      "position": {
+        "x": 1348.0482061701255,
+        "y": 1373.3766173793806
+      },
+      "type": "Debug.GraphDisplay"
+    },
+    {
+      "id": "transform-numberholder-1",
+      "type": "Transform.NumberHolder",
+      "config": {
+        "emitOnInit": true,
+        "initValue": 0,
+        "valueType": "flowboard::Int64"
+      },
+      "position": {
+        "x": 1025.5798873291978,
+        "y": 965.4224863887438
+      }
+    },
+    {
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Int64",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "id": "debug-graphdisplay-1-copy8",
+      "position": {
+        "x": 1343.365912383863,
+        "y": 1160.0765855854454
+      },
+      "type": "Debug.GraphDisplay"
+    },
+    {
+      "id": "transform-convert-1",
+      "type": "Transform.Convert",
+      "config": {
+        "inputType": "flowboard::Int64",
+        "mode": "lookup",
+        "outputType": "flowboard::String",
+        "template": "{value}",
+        "mappings": [
+          {
+            "when": 1,
+            "value": "one"
+          },
+          {
+            "when": 2,
+            "value": "two"
+          },
+          {
+            "when": 3,
+            "value": "three"
+          },
+          {
+            "when": 4,
+            "value": "four"
+          },
+          {
+            "when": 0,
+            "value": "zero"
+          }
+        ],
+        "fallback": "Above four"
+      },
+      "position": {
+        "x": 1191.7593750000005,
+        "y": 575.3124999999997
+      }
+    },
+    {
+      "config": {
+        "fields": [],
+        "inputType": "flowboard::String"
+      },
+      "height": 110,
+      "id": "debug-valuedisplay-1-copy1",
+      "position": {
+        "x": 1791.3862960676354,
+        "y": 716.8602568238473
+      },
+      "type": "Debug.ValueDisplay",
+      "width": 204
+    },
+    {
+      "id": "transform-arithmetic-1",
+      "type": "Transform.Arithmetic",
+      "config": {
+        "inputType": "flowboard::Int64",
+        "op": "multiply"
+      },
+      "position": {
+        "x": 121.02330667227204,
+        "y": 1095.6490897482654
+      }
+    },
+    {
+      "id": "debug-graphdisplay-2",
+      "type": "Debug.GraphDisplay",
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Int64",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "position": {
+        "x": 518.3454551001145,
+        "y": 1318.1364880076724
+      }
+    }
+  ],
+  "version": "1.0"
+}

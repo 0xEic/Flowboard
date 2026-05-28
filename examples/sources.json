@@ -1,0 +1,694 @@
+{
+  "edges": [
+    {
+      "from": "sources-iterator-example.value",
+      "to": "debug-graphdisplay-1.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-iterator-example.endReached",
+      "to": "debug-graphdisplay-2.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-iterator-example.increasing",
+      "to": "debug-graphdisplay-3.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-timer-example.tick",
+      "to": "sources-random-example.trigger",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-timer-example.timeLeft",
+      "to": "debug-graphdisplay-5.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-random-example.out",
+      "to": "debug-graphdisplay-4.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-currenttime-example.iso",
+      "to": "debug-valuedisplay-1.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-currenttime-example.commonTime",
+      "to": "debug-valuedisplay-2.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-timesource-example.commonTime",
+      "to": "debug-valuedisplay-3.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "sources-timesource-example.iso",
+      "to": "debug-valuedisplay-4.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "transform-constantsource-true.out",
+      "to": "sources-timesource-example.running",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    }
+  ],
+  "metadata": {
+    "description": "Source nodes that originate data: Timer, CurrentTime, TimeSource, Iterator and ConstantSource. Each feeds a Sinks.Log so its output is visible in the live-values pane. Note nodes explain each source.",
+    "name": "Sources",
+    "authoring": {
+      "edges": [
+        {
+          "from": "sources-iterator-example.value",
+          "to": "debug-graphdisplay-1.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-iterator-example.endReached",
+          "to": "debug-graphdisplay-2.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-iterator-example.increasing",
+          "to": "debug-graphdisplay-3.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-timer-example.tick",
+          "to": "sources-random-example.trigger",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-timer-example.timeLeft",
+          "to": "debug-graphdisplay-5.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-random-example.out",
+          "to": "debug-graphdisplay-4.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-currenttime-example.iso",
+          "to": "debug-valuedisplay-1.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-currenttime-example.commonTime",
+          "to": "debug-valuedisplay-2.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-timesource-example.commonTime",
+          "to": "debug-valuedisplay-3.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "sources-timesource-example.iso",
+          "to": "debug-valuedisplay-4.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "transform-constantsource-true.out",
+          "to": "sources-timesource-example.running",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        }
+      ],
+      "metadata": {
+        "description": "Source nodes that originate data: Timer, CurrentTime, TimeSource, Iterator and ConstantSource. Each feeds a Sinks.Log so its output is visible in the live-values pane. Note nodes explain each source.",
+        "name": "Sources"
+      },
+      "nodes": [
+        {
+          "id": "sources-iterator-example",
+          "type": "Sources.Iterator",
+          "config": {
+            "autoReverse": true,
+            "autostart": false,
+            "endValue": 360,
+            "loop": true,
+            "specialEndEndValue": "expo",
+            "specialEndStartValue": "expo",
+            "specialStartEndValue": "expo",
+            "specialStartStartValue": "expo",
+            "startValue": 0,
+            "stepSize": 10,
+            "timeBetweenStepsMs": 100,
+            "defaults": {
+              "start": true
+            }
+          },
+          "position": {
+            "x": 917.1126097361,
+            "y": 726.3089886712203
+          }
+        },
+        {
+          "id": "debug-graphdisplay-1",
+          "type": "Debug.GraphDisplay",
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Double",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "position": {
+            "x": 1395.5803373624526,
+            "y": 726.1317049123071
+          }
+        },
+        {
+          "id": "debug-graphdisplay-2",
+          "type": "Debug.GraphDisplay",
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Bool",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "position": {
+            "x": 1396.608509017097,
+            "y": 949.8809615098594
+          }
+        },
+        {
+          "id": "debug-graphdisplay-3",
+          "type": "Debug.GraphDisplay",
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Bool",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "position": {
+            "x": 1394.0882459437391,
+            "y": 1182.7598721304212
+          }
+        },
+        {
+          "id": "sources-random-example",
+          "type": "Sources.Random",
+          "config": {
+            "allowDigits": false,
+            "allowLowercase": true,
+            "allowSymbols": false,
+            "allowUppercase": false,
+            "autoTriggerOnInit": true,
+            "length": 8,
+            "max": 10,
+            "min": -10,
+            "outputType": "flowboard::Int64",
+            "trueProbability": 0.5
+          },
+          "position": {
+            "x": 1439.2532108554142,
+            "y": 328.905663214802
+          }
+        },
+        {
+          "id": "debug-graphdisplay-4",
+          "type": "Debug.GraphDisplay",
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Int64",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "position": {
+            "x": 1768.3143384658842,
+            "y": 287.9369824025578
+          }
+        },
+        {
+          "id": "sources-timer-example",
+          "type": "Sources.Timer",
+          "config": {
+            "autostart": true,
+            "intervalMs": 1000,
+            "repeat": true
+          },
+          "position": {
+            "x": 934.8681829835834,
+            "y": 399.3662872394991
+          }
+        },
+        {
+          "id": "debug-graphdisplay-5",
+          "type": "Debug.GraphDisplay",
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Int64",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "position": {
+            "x": 1769.1589382548323,
+            "y": 508.7999308265572
+          }
+        },
+        {
+          "id": "sources-currenttime-example",
+          "type": "Sources.CurrentTime",
+          "config": {
+            "autoTrigger": true,
+            "autoTriggerMs": 1000,
+            "unit": "iso8601"
+          },
+          "position": {
+            "x": 1871.4729356719404,
+            "y": 938.568670454492
+          }
+        },
+        {
+          "id": "debug-valuedisplay-1",
+          "type": "Debug.ValueDisplay",
+          "config": {
+            "fields": [],
+            "inputType": "flowboard::String"
+          },
+          "position": {
+            "x": 2423.3806298925315,
+            "y": 993.9758961887272
+          },
+          "width": 213,
+          "height": 110
+        },
+        {
+          "id": "debug-valuedisplay-2",
+          "type": "Debug.ValueDisplay",
+          "config": {
+            "fields": [],
+            "inputType": "M_Common::TimeType"
+          },
+          "position": {
+            "x": 2423.8490758154444,
+            "y": 869.2610875341973
+          },
+          "width": 336,
+          "height": 110
+        },
+        {
+          "id": "debug-valuedisplay-4",
+          "type": "Debug.ValueDisplay",
+          "config": {
+            "fields": [],
+            "inputType": "flowboard::String"
+          },
+          "position": {
+            "x": 2419.6003431472386,
+            "y": 1454.8612210338647
+          },
+          "width": 213,
+          "height": 110
+        },
+        {
+          "id": "debug-valuedisplay-3",
+          "type": "Debug.ValueDisplay",
+          "config": {
+            "fields": [],
+            "inputType": "M_Common::TimeType"
+          },
+          "position": {
+            "x": 2420.0687890701515,
+            "y": 1330.1464123793348
+          },
+          "width": 336,
+          "height": 110
+        },
+        {
+          "id": "sources-timesource-example",
+          "type": "Sources.TimeSource",
+          "config": {
+            "day": 1,
+            "hour": 0,
+            "millisecond": 0,
+            "minute": 0,
+            "month": 1,
+            "second": 0,
+            "updateMs": 1000,
+            "year": 2026
+          },
+          "position": {
+            "x": 2124.846605722633,
+            "y": 1306.15857879898
+          }
+        },
+        {
+          "id": "transform-constantsource-true",
+          "type": "Transform.ConstantSource",
+          "config": {
+            "autoTriggerOnInit": true,
+            "outputType": "flowboard::Bool",
+            "value": true
+          },
+          "position": {
+            "x": 1864.0888871337254,
+            "y": 1291.4288336080372
+          }
+        },
+        {
+          "id": "note-1",
+          "type": "Note",
+          "config": {
+            "text": "A Timer emits a true pulse on its tick output every intervalMs milliseconds (once if repeat is off), with start/reset inputs to control its run state and isRunning/timeLeft/timePast outputs reporting status and per-interval progress."
+          },
+          "position": {
+            "x": 930.4235082282388,
+            "y": 271.00561606625575
+          },
+          "width": 324,
+          "height": 108
+        },
+        {
+          "id": "note-2",
+          "type": "Note",
+          "config": {
+            "text": "Random emits a random value of the configured type on each trigger (min/max for numbers, length + character classes for strings, probability for Bool)."
+          },
+          "position": {
+            "x": 1428.661687241592,
+            "y": 187.17506531162812
+          }
+        },
+        {
+          "id": "note-3",
+          "type": "Note",
+          "config": {
+            "text": "Iterator steps a value from startValue to endValue by stepSize at a timed cadence, optionally looping or sweeping back and forth (a ramp/sweep generator)."
+          },
+          "position": {
+            "x": 936.5335545551034,
+            "y": 1399.0787600398892
+          },
+          "width": 408,
+          "height": 78
+        },
+        {
+          "id": "note-4",
+          "type": "Note",
+          "config": {
+            "text": "CurrentTime emits the current time whenever 'trigger' fires, typed per the configured unit (epoch ms/s as Int64, or a formatted String). "
+          },
+          "position": {
+            "x": 1874.2171097854307,
+            "y": 798.6250662955028
+          },
+          "width": 223,
+          "height": 97
+        },
+        {
+          "id": "note-5",
+          "type": "Note",
+          "config": {
+            "text": "ConstantSource emits a fixed configured primitive value on 'trigger' (and once on init when auto-trigger is on)."
+          },
+          "position": {
+            "x": 1864.6087506574243,
+            "y": 1144.4740602242082
+          },
+          "width": 229,
+          "height": 85
+        },
+        {
+          "id": "note-5-copy1",
+          "type": "Note",
+          "config": {
+            "text": "Timesource emits a fixed UTC timestamp (epoch milliseconds) assembled from configured discrete date/time fields."
+          },
+          "position": {
+            "x": 2124.224006832876,
+            "y": 1151.3745342218422
+          },
+          "width": 212,
+          "height": 94
+        }
+      ],
+      "version": "1.0"
+    }
+  },
+  "nodes": [
+    {
+      "id": "sources-iterator-example",
+      "type": "Sources.Iterator",
+      "config": {
+        "autoReverse": true,
+        "autostart": false,
+        "endValue": 360,
+        "loop": true,
+        "specialEndEndValue": "expo",
+        "specialEndStartValue": "expo",
+        "specialStartEndValue": "expo",
+        "specialStartStartValue": "expo",
+        "startValue": 0,
+        "stepSize": 10,
+        "timeBetweenStepsMs": 100,
+        "defaults": {
+          "start": true
+        }
+      },
+      "position": {
+        "x": 917.1126097361,
+        "y": 726.3089886712203
+      }
+    },
+    {
+      "id": "debug-graphdisplay-1",
+      "type": "Debug.GraphDisplay",
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Double",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "position": {
+        "x": 1395.5803373624526,
+        "y": 726.1317049123071
+      }
+    },
+    {
+      "id": "debug-graphdisplay-2",
+      "type": "Debug.GraphDisplay",
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Bool",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "position": {
+        "x": 1396.608509017097,
+        "y": 949.8809615098594
+      }
+    },
+    {
+      "id": "debug-graphdisplay-3",
+      "type": "Debug.GraphDisplay",
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Bool",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "position": {
+        "x": 1394.0882459437391,
+        "y": 1182.7598721304212
+      }
+    },
+    {
+      "id": "sources-random-example",
+      "type": "Sources.Random",
+      "config": {
+        "allowDigits": false,
+        "allowLowercase": true,
+        "allowSymbols": false,
+        "allowUppercase": false,
+        "autoTriggerOnInit": true,
+        "length": 8,
+        "max": 10,
+        "min": -10,
+        "outputType": "flowboard::Int64",
+        "trueProbability": 0.5
+      },
+      "position": {
+        "x": 1439.2532108554142,
+        "y": 328.905663214802
+      }
+    },
+    {
+      "id": "debug-graphdisplay-4",
+      "type": "Debug.GraphDisplay",
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Int64",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "position": {
+        "x": 1768.3143384658842,
+        "y": 287.9369824025578
+      }
+    },
+    {
+      "id": "sources-timer-example",
+      "type": "Sources.Timer",
+      "config": {
+        "autostart": true,
+        "intervalMs": 1000,
+        "repeat": true
+      },
+      "position": {
+        "x": 934.8681829835834,
+        "y": 399.3662872394991
+      }
+    },
+    {
+      "id": "debug-graphdisplay-5",
+      "type": "Debug.GraphDisplay",
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Int64",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "position": {
+        "x": 1769.1589382548323,
+        "y": 508.7999308265572
+      }
+    },
+    {
+      "id": "sources-currenttime-example",
+      "type": "Sources.CurrentTime",
+      "config": {
+        "autoTrigger": true,
+        "autoTriggerMs": 1000,
+        "unit": "iso8601"
+      },
+      "position": {
+        "x": 1871.4729356719404,
+        "y": 938.568670454492
+      }
+    },
+    {
+      "id": "debug-valuedisplay-1",
+      "type": "Debug.ValueDisplay",
+      "config": {
+        "fields": [],
+        "inputType": "flowboard::String"
+      },
+      "position": {
+        "x": 2423.3806298925315,
+        "y": 993.9758961887272
+      },
+      "width": 213,
+      "height": 110
+    },
+    {
+      "id": "debug-valuedisplay-2",
+      "type": "Debug.ValueDisplay",
+      "config": {
+        "fields": [],
+        "inputType": "M_Common::TimeType"
+      },
+      "position": {
+        "x": 2423.8490758154444,
+        "y": 869.2610875341973
+      },
+      "width": 336,
+      "height": 110
+    },
+    {
+      "id": "debug-valuedisplay-4",
+      "type": "Debug.ValueDisplay",
+      "config": {
+        "fields": [],
+        "inputType": "flowboard::String"
+      },
+      "position": {
+        "x": 2419.6003431472386,
+        "y": 1454.8612210338647
+      },
+      "width": 213,
+      "height": 110
+    },
+    {
+      "id": "debug-valuedisplay-3",
+      "type": "Debug.ValueDisplay",
+      "config": {
+        "fields": [],
+        "inputType": "M_Common::TimeType"
+      },
+      "position": {
+        "x": 2420.0687890701515,
+        "y": 1330.1464123793348
+      },
+      "width": 336,
+      "height": 110
+    },
+    {
+      "id": "sources-timesource-example",
+      "type": "Sources.TimeSource",
+      "config": {
+        "day": 1,
+        "hour": 0,
+        "millisecond": 0,
+        "minute": 0,
+        "month": 1,
+        "second": 0,
+        "updateMs": 1000,
+        "year": 2026
+      },
+      "position": {
+        "x": 2124.846605722633,
+        "y": 1306.15857879898
+      }
+    },
+    {
+      "id": "transform-constantsource-true",
+      "type": "Transform.ConstantSource",
+      "config": {
+        "autoTriggerOnInit": true,
+        "outputType": "flowboard::Bool",
+        "value": true
+      },
+      "position": {
+        "x": 1864.0888871337254,
+        "y": 1291.4288336080372
+      }
+    }
+  ],
+  "version": "1.0"
+}

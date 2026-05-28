@@ -1,0 +1,556 @@
+{
+  "edges": [
+    {
+      "capacity": 256,
+      "from": "ramp.value",
+      "policy": "drop_oldest",
+      "to": "plot.in"
+    },
+    {
+      "capacity": 256,
+      "from": "ramp.value",
+      "policy": "drop_oldest",
+      "to": "value.in"
+    },
+    {
+      "capacity": 16,
+      "from": "button.out",
+      "policy": "block",
+      "to": "message.trigger"
+    },
+    {
+      "capacity": 16,
+      "from": "message.out",
+      "policy": "block",
+      "to": "log-message.in"
+    },
+    {
+      "capacity": 16,
+      "from": "button-copy1.out",
+      "policy": "block",
+      "to": "message-copy1.trigger"
+    },
+    {
+      "capacity": 16,
+      "from": "message-copy1.out",
+      "policy": "block",
+      "to": "log-message-copy1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "transform-inverter-1.out",
+      "policy": "drop_oldest",
+      "to": "message-copy2.trigger"
+    },
+    {
+      "capacity": 256,
+      "from": "message-copy2.out",
+      "policy": "drop_oldest",
+      "to": "log-message.in"
+    },
+    {
+      "capacity": 256,
+      "from": "button.out",
+      "policy": "drop_oldest",
+      "to": "transform-inverter-1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "transform-inverter-1-copy1.out",
+      "policy": "drop_oldest",
+      "to": "message-copy3.trigger"
+    },
+    {
+      "capacity": 256,
+      "from": "message-copy3.out",
+      "policy": "drop_oldest",
+      "to": "log-message-copy1.in"
+    },
+    {
+      "capacity": 256,
+      "from": "button-copy1.out",
+      "policy": "drop_oldest",
+      "to": "transform-inverter-1-copy1.in"
+    }
+  ],
+  "metadata": {
+    "description": "Inspection nodes. An Iterator ramp feeds a Debug.GraphDisplay (plot over time) and a Debug.ValueDisplay (current value). A Debug.TriggerButton fires a ConstantSource string into a Log, and its boolean state shows on a second ValueDisplay.",
+    "name": "debug-and-display",
+    "authoring": {
+      "edges": [
+        {
+          "capacity": 256,
+          "from": "ramp.value",
+          "policy": "drop_oldest",
+          "to": "plot.in"
+        },
+        {
+          "capacity": 256,
+          "from": "ramp.value",
+          "policy": "drop_oldest",
+          "to": "value.in"
+        },
+        {
+          "capacity": 16,
+          "from": "button.out",
+          "policy": "block",
+          "to": "message.trigger"
+        },
+        {
+          "capacity": 16,
+          "from": "message.out",
+          "policy": "block",
+          "to": "log-message.in"
+        },
+        {
+          "capacity": 16,
+          "from": "button-copy1.out",
+          "policy": "block",
+          "to": "message-copy1.trigger"
+        },
+        {
+          "capacity": 16,
+          "from": "message-copy1.out",
+          "policy": "block",
+          "to": "log-message-copy1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "transform-inverter-1.out",
+          "policy": "drop_oldest",
+          "to": "message-copy2.trigger"
+        },
+        {
+          "capacity": 256,
+          "from": "message-copy2.out",
+          "policy": "drop_oldest",
+          "to": "log-message.in"
+        },
+        {
+          "capacity": 256,
+          "from": "button.out",
+          "policy": "drop_oldest",
+          "to": "transform-inverter-1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "transform-inverter-1-copy1.out",
+          "policy": "drop_oldest",
+          "to": "message-copy3.trigger"
+        },
+        {
+          "capacity": 256,
+          "from": "message-copy3.out",
+          "policy": "drop_oldest",
+          "to": "log-message-copy1.in"
+        },
+        {
+          "capacity": 256,
+          "from": "button-copy1.out",
+          "policy": "drop_oldest",
+          "to": "transform-inverter-1-copy1.in"
+        }
+      ],
+      "metadata": {
+        "description": "Inspection nodes. An Iterator ramp feeds a Debug.GraphDisplay (plot over time) and a Debug.ValueDisplay (current value). A Debug.TriggerButton fires a ConstantSource string into a Log, and its boolean state shows on a second ValueDisplay.",
+        "name": "debug-and-display"
+      },
+      "nodes": [
+        {
+          "config": {
+            "autoReverse": false,
+            "autostart": false,
+            "defaults": {
+              "start": true
+            },
+            "endValue": 100,
+            "loop": true,
+            "specialEndEndValue": "linear",
+            "specialEndStartValue": "linear",
+            "specialStartEndValue": "linear",
+            "specialStartStartValue": "linear",
+            "startValue": 0,
+            "stepSize": 5,
+            "timeBetweenStepsMs": 300,
+            "valueType": "flowboard::Double"
+          },
+          "id": "ramp",
+          "position": {
+            "x": 142.62795190707345,
+            "y": -56.6721701656892
+          },
+          "type": "Sources.Iterator"
+        },
+        {
+          "config": {
+            "autoScale": true,
+            "inputType": "flowboard::Double",
+            "timeWindowSec": 30,
+            "yMax": 1,
+            "yMin": 0
+          },
+          "id": "plot",
+          "position": {
+            "x": 705.9504976403884,
+            "y": 18.531371847249943
+          },
+          "type": "Debug.GraphDisplay"
+        },
+        {
+          "config": {
+            "inputType": "flowboard::Double"
+          },
+          "id": "value",
+          "position": {
+            "x": 730.9273907241422,
+            "y": 334.34322799016155
+          },
+          "type": "Debug.ValueDisplay"
+        },
+        {
+          "config": {
+            "label": "Fire event",
+            "mode": "pushbutton"
+          },
+          "id": "button",
+          "position": {
+            "x": 161.71907574146104,
+            "y": 619.2215273724805
+          },
+          "type": "Debug.TriggerButton"
+        },
+        {
+          "config": {
+            "autoTriggerOnInit": false,
+            "outputType": "flowboard::String",
+            "value": "Button pressed!"
+          },
+          "id": "message",
+          "position": {
+            "x": 486.5313104135739,
+            "y": 616.4480909599762
+          },
+          "type": "Transform.ConstantSource"
+        },
+        {
+          "config": {
+            "inputType": "flowboard::String",
+            "prefix": "event"
+          },
+          "id": "log-message",
+          "position": {
+            "x": 950.0844402698365,
+            "y": 632.6061107594993
+          },
+          "type": "Sinks.Log"
+        },
+        {
+          "config": {
+            "label": "Fire event",
+            "mode": "switch"
+          },
+          "id": "button-copy1",
+          "position": {
+            "x": 153.8795693264974,
+            "y": 906.2294208364297
+          },
+          "type": "Debug.TriggerButton"
+        },
+        {
+          "config": {
+            "autoTriggerOnInit": false,
+            "outputType": "flowboard::String",
+            "value": "Switch pressed!"
+          },
+          "id": "message-copy1",
+          "position": {
+            "x": 478.69180399861045,
+            "y": 903.4559844239253
+          },
+          "type": "Transform.ConstantSource"
+        },
+        {
+          "config": {
+            "inputType": "flowboard::String",
+            "prefix": "event"
+          },
+          "id": "log-message-copy1",
+          "position": {
+            "x": 951.5741409566114,
+            "y": 913.0835592522317
+          },
+          "type": "Sinks.Log"
+        },
+        {
+          "config": {},
+          "id": "transform-inverter-1",
+          "position": {
+            "x": 414.0701407430264,
+            "y": 737.0689652677707
+          },
+          "type": "Transform.Inverter"
+        },
+        {
+          "config": {
+            "autoTriggerOnInit": false,
+            "outputType": "flowboard::String",
+            "value": "Button released!"
+          },
+          "id": "message-copy2",
+          "position": {
+            "x": 672.0669412006907,
+            "y": 753.471844818054
+          },
+          "type": "Transform.ConstantSource"
+        },
+        {
+          "config": {},
+          "id": "transform-inverter-1-copy1",
+          "position": {
+            "x": 413.0216294953781,
+            "y": 1042.9513676673112
+          },
+          "type": "Transform.Inverter"
+        },
+        {
+          "config": {
+            "autoTriggerOnInit": false,
+            "outputType": "flowboard::String",
+            "value": "Switched released!"
+          },
+          "id": "message-copy3",
+          "position": {
+            "x": 671.0184299530424,
+            "y": 1059.3542472175945
+          },
+          "type": "Transform.ConstantSource"
+        },
+        {
+          "config": {
+            "text": "Plots an incoming numeric value over time as a live chart on the canvas node."
+          },
+          "id": "note-1",
+          "position": {
+            "x": 1020.1933868704159,
+            "y": 44.79645798706085
+          },
+          "type": "Note",
+          "width": 178,
+          "height": 78
+        },
+        {
+          "config": {
+            "text": "Shows the latest value flowing into it directly on the canvas node."
+          },
+          "id": "note-1-copy1",
+          "position": {
+            "x": 1013.3345402346602,
+            "y": 368.799928399892
+          },
+          "type": "Note",
+          "width": 190,
+          "height": 75
+        },
+        {
+          "config": {
+            "text": "Logs each received value (any type) to the application log with a configurable prefix."
+          },
+          "id": "note-1-copy2",
+          "position": {
+            "x": 973.7750377376294,
+            "y": 783.3310501894723
+          },
+          "type": "Note",
+          "width": 178,
+          "height": 82
+        },
+        {
+          "config": {
+            "text": "A canvas button that emits a 'true' pulse each time it is clicked."
+          },
+          "id": "note-1-copy3",
+          "position": {
+            "x": 170.58751933119925,
+            "y": 771.7890361005128
+          },
+          "type": "Note",
+          "width": 162,
+          "height": 70
+        }
+      ],
+      "version": "1.0"
+    }
+  },
+  "nodes": [
+    {
+      "config": {
+        "autoReverse": false,
+        "autostart": false,
+        "defaults": {
+          "start": true
+        },
+        "endValue": 100,
+        "loop": true,
+        "specialEndEndValue": "linear",
+        "specialEndStartValue": "linear",
+        "specialStartEndValue": "linear",
+        "specialStartStartValue": "linear",
+        "startValue": 0,
+        "stepSize": 5,
+        "timeBetweenStepsMs": 300,
+        "valueType": "flowboard::Double"
+      },
+      "id": "ramp",
+      "position": {
+        "x": 142.62795190707345,
+        "y": -56.6721701656892
+      },
+      "type": "Sources.Iterator"
+    },
+    {
+      "config": {
+        "autoScale": true,
+        "inputType": "flowboard::Double",
+        "timeWindowSec": 30,
+        "yMax": 1,
+        "yMin": 0
+      },
+      "id": "plot",
+      "position": {
+        "x": 705.9504976403884,
+        "y": 18.531371847249943
+      },
+      "type": "Debug.GraphDisplay"
+    },
+    {
+      "config": {
+        "inputType": "flowboard::Double"
+      },
+      "id": "value",
+      "position": {
+        "x": 730.9273907241422,
+        "y": 334.34322799016155
+      },
+      "type": "Debug.ValueDisplay"
+    },
+    {
+      "config": {
+        "label": "Fire event",
+        "mode": "pushbutton"
+      },
+      "id": "button",
+      "position": {
+        "x": 161.71907574146104,
+        "y": 619.2215273724805
+      },
+      "type": "Debug.TriggerButton"
+    },
+    {
+      "config": {
+        "autoTriggerOnInit": false,
+        "outputType": "flowboard::String",
+        "value": "Button pressed!"
+      },
+      "id": "message",
+      "position": {
+        "x": 486.5313104135739,
+        "y": 616.4480909599762
+      },
+      "type": "Transform.ConstantSource"
+    },
+    {
+      "config": {
+        "inputType": "flowboard::String",
+        "prefix": "event"
+      },
+      "id": "log-message",
+      "position": {
+        "x": 950.0844402698365,
+        "y": 632.6061107594993
+      },
+      "type": "Sinks.Log"
+    },
+    {
+      "config": {
+        "label": "Fire event",
+        "mode": "switch"
+      },
+      "id": "button-copy1",
+      "position": {
+        "x": 153.8795693264974,
+        "y": 906.2294208364297
+      },
+      "type": "Debug.TriggerButton"
+    },
+    {
+      "config": {
+        "autoTriggerOnInit": false,
+        "outputType": "flowboard::String",
+        "value": "Switch pressed!"
+      },
+      "id": "message-copy1",
+      "position": {
+        "x": 478.69180399861045,
+        "y": 903.4559844239253
+      },
+      "type": "Transform.ConstantSource"
+    },
+    {
+      "config": {
+        "inputType": "flowboard::String",
+        "prefix": "event"
+      },
+      "id": "log-message-copy1",
+      "position": {
+        "x": 951.5741409566114,
+        "y": 913.0835592522317
+      },
+      "type": "Sinks.Log"
+    },
+    {
+      "config": {},
+      "id": "transform-inverter-1",
+      "position": {
+        "x": 414.0701407430264,
+        "y": 737.0689652677707
+      },
+      "type": "Transform.Inverter"
+    },
+    {
+      "config": {
+        "autoTriggerOnInit": false,
+        "outputType": "flowboard::String",
+        "value": "Button released!"
+      },
+      "id": "message-copy2",
+      "position": {
+        "x": 672.0669412006907,
+        "y": 753.471844818054
+      },
+      "type": "Transform.ConstantSource"
+    },
+    {
+      "config": {},
+      "id": "transform-inverter-1-copy1",
+      "position": {
+        "x": 413.0216294953781,
+        "y": 1042.9513676673112
+      },
+      "type": "Transform.Inverter"
+    },
+    {
+      "config": {
+        "autoTriggerOnInit": false,
+        "outputType": "flowboard::String",
+        "value": "Switched released!"
+      },
+      "id": "message-copy3",
+      "position": {
+        "x": 671.0184299530424,
+        "y": 1059.3542472175945
+      },
+      "type": "Transform.ConstantSource"
+    }
+  ],
+  "version": "1.0"
+}

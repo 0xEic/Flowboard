@@ -1,0 +1,4 @@
+// Windows application icon for the flowboard executable.
+// The lowest-numbered ICON resource becomes the icon shown in Explorer, the
+// taskbar, and the title bar. icon.ico is generated from icon.png.
+1 ICON "icon.ico"

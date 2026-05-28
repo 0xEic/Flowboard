@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: MIT
+#include "CommonTypes.rmodel"
+
+module M_Sample
+{
+  const string Version = "1.0.0";
+
+  typedef sequence<long> LongListType;
+  typedef sequence<long, 1> LongOptionalType;
+  typedef string<255> BoundedStringType;
+}

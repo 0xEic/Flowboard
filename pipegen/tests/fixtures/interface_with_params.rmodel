@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: MIT
+module M_Sample
+{
+  struct Point
+  {
+    double X;
+    double Y;
+  };
+
+  interface IClient
+  {
+    /// Notify the service with one position.
+    void ReportPosition (
+      in string KeyId,
+      in Point  Position,
+      in boolean IsRemoved
+    );
+
+    void ReportNothing();
+  };
+}

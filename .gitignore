@@ -1,0 +1,26 @@
+build/
+build-*/
+out/
+.cache/
+.vs/
+.vscode/
+web/dist/
+web/node_modules/
+web/*.tsbuildinfo
+web/vite.config.js
+web/vite.config.d.ts
+src/onboardapi/generated/
+web/src/generated/
+*.user
+.DS_Store
+__pycache__/
+*.pyc
+
+# Build artifacts that may end up at repo root
+*.obj
+*.pdb
+*.exe
+
+# Test runtime artifacts
+tests/integration/*.log
+tests/integration/*.pid
