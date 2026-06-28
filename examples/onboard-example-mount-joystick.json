@@ -44,67 +44,85 @@
     },
     {
       "capacity": 256,
-      "from": "m-hidjoystick-client-1.EventButton.ButtonIndex",
-      "policy": "block",
-      "to": "input-buttonhandler-1.ButtonIndex"
-    },
-    {
-      "capacity": 256,
-      "from": "m-hidjoystick-client-1.EventButton.ButtonName",
-      "policy": "block",
-      "to": "input-buttonhandler-1.ButtonName"
-    },
-    {
-      "capacity": 256,
-      "from": "m-hidjoystick-client-1.EventButton.IsSelected",
-      "policy": "block",
-      "to": "input-buttonhandler-1.IsSelected"
-    },
-    {
-      "capacity": 256,
       "from": "debug-triggerbutton-1.out",
       "policy": "drop_oldest",
-      "to": "m-hidjoystick-service-1.EventButton.trigger"
+      "to": "eventbutton-args-0.IsSelected"
     },
     {
       "capacity": 256,
-      "from": "input-buttonhandler-1.Button 0",
+      "from": "eventbutton-args-0.out",
       "policy": "drop_oldest",
-      "to": "debug-graphdisplay-3.in"
+      "to": "m-hidjoystick-service-1.EventButton.args"
     },
     {
       "capacity": 256,
-      "from": "input-buttonhandler-1.Button 0",
+      "from": "debug-triggerbutton-1-copy1.out",
       "policy": "drop_oldest",
-      "to": "debug-graphdisplay-3.in"
+      "to": "eventbutton-args-1.IsSelected"
     },
     {
       "capacity": 256,
-      "from": "input-buttonhandler-1.Button 0",
+      "from": "eventbutton-args-1.out",
       "policy": "drop_oldest",
-      "to": "debug-graphdisplay-3.in"
+      "to": "m-hidjoystick-service-1.EventButton.args"
     },
     {
       "capacity": 256,
-      "from": "input-buttonhandler-1.Button 0",
-      "policy": "drop_oldest",
-      "to": "debug-graphdisplay-3.in"
+      "from": "m-hidjoystick-client-1.EventButton.args",
+      "policy": "block",
+      "to": "input-buttonhandler-1.args"
     },
     {
-      "from": "input-buttonhandler-1.Button 1",
-      "to": "debug-graphdisplay-3-copy1.in",
+      "capacity": 256,
+      "from": "debug-triggerbutton-1-copy2.out",
+      "policy": "drop_oldest",
+      "to": "eventbutton-args-0-copy1.IsSelected"
+    },
+    {
+      "capacity": 256,
+      "from": "debug-triggerbutton-1-copy3.out",
+      "policy": "drop_oldest",
+      "to": "eventbutton-args-1-copy1.IsSelected"
+    },
+    {
+      "from": "eventbutton-args-1-copy1.out",
+      "to": "m-hidjoystick-service-1.EventButton.args",
       "capacity": 256,
       "policy": "drop_oldest"
     },
     {
-      "from": "debug-triggerbutton-1-copy1.out",
-      "to": "m-hidjoystick-service-1.EventButton.IsSelected",
+      "from": "eventbutton-args-0-copy1.out",
+      "to": "m-hidjoystick-service-1.EventButton.args",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "input-buttonhandler-1.Start El",
+      "to": "sources-iterator-El.start",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "input-buttonhandler-1.Stop El",
+      "to": "sources-iterator-El.stop",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "input-buttonhandler-1.Stop Az",
+      "to": "sources-iterator-Az.stop",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "input-buttonhandler-1.Start Az",
+      "to": "sources-iterator-Az.start",
       "capacity": 256,
       "policy": "drop_oldest"
     }
   ],
   "metadata": {
-    "description": "M_Mount.Service is the main node. A small M_Mount.Client injects azimuth/elevation movement by driving NotifyAngle (Azimuth, Elevation) and NotifyRateAbsolute (AzimuthRate, ElevationRate). The Service re-emits those on its NotifyAngle/NotifyRateAbsolute outputs, which are logged, plotted and thresholded.",
+    "description": "M_Mount.Service is the main node. A M_Mount.Client injects mount position: two Sources.Iterators sweep azimuth and elevation, are composed into a MountPositionType by Factory.M_Mount::MountPositionType, and re-emitted on ReportMountPosition - plotted via Debug.GraphDisplay after Transform.Extract pulls out Azimuth and Elevation. A M_HidJoystick Service/Client pair carries EventButton presses atomically: trigger buttons feed Factory.M_HidJoystick::EventButton_Args structs into the service, the client re-emits each as one EventButton_Args message into Input.ButtonHandler's args input, and the handler's Start Az / Stop Az / Start El / Stop El outputs start and stop the iterators.",
     "name": "onboard-example-mount-joystick",
     "authoring": {
       "edges": [
@@ -152,67 +170,85 @@
         },
         {
           "capacity": 256,
-          "from": "m-hidjoystick-client-1.EventButton.ButtonIndex",
-          "policy": "block",
-          "to": "input-buttonhandler-1.ButtonIndex"
-        },
-        {
-          "capacity": 256,
-          "from": "m-hidjoystick-client-1.EventButton.ButtonName",
-          "policy": "block",
-          "to": "input-buttonhandler-1.ButtonName"
-        },
-        {
-          "capacity": 256,
-          "from": "m-hidjoystick-client-1.EventButton.IsSelected",
-          "policy": "block",
-          "to": "input-buttonhandler-1.IsSelected"
-        },
-        {
-          "capacity": 256,
           "from": "debug-triggerbutton-1.out",
           "policy": "drop_oldest",
-          "to": "m-hidjoystick-service-1.EventButton.trigger"
+          "to": "eventbutton-args-0.IsSelected"
         },
         {
           "capacity": 256,
-          "from": "input-buttonhandler-1.Button 0",
+          "from": "eventbutton-args-0.out",
           "policy": "drop_oldest",
-          "to": "debug-graphdisplay-3.in"
+          "to": "m-hidjoystick-service-1.EventButton.args"
         },
         {
           "capacity": 256,
-          "from": "input-buttonhandler-1.Button 0",
+          "from": "debug-triggerbutton-1-copy1.out",
           "policy": "drop_oldest",
-          "to": "debug-graphdisplay-3.in"
+          "to": "eventbutton-args-1.IsSelected"
         },
         {
           "capacity": 256,
-          "from": "input-buttonhandler-1.Button 0",
+          "from": "eventbutton-args-1.out",
           "policy": "drop_oldest",
-          "to": "debug-graphdisplay-3.in"
+          "to": "m-hidjoystick-service-1.EventButton.args"
         },
         {
           "capacity": 256,
-          "from": "input-buttonhandler-1.Button 0",
-          "policy": "drop_oldest",
-          "to": "debug-graphdisplay-3.in"
+          "from": "m-hidjoystick-client-1.EventButton.args",
+          "policy": "block",
+          "to": "input-buttonhandler-1.args"
         },
         {
-          "from": "input-buttonhandler-1.Button 1",
-          "to": "debug-graphdisplay-3-copy1.in",
+          "capacity": 256,
+          "from": "debug-triggerbutton-1-copy2.out",
+          "policy": "drop_oldest",
+          "to": "eventbutton-args-0-copy1.IsSelected"
+        },
+        {
+          "capacity": 256,
+          "from": "debug-triggerbutton-1-copy3.out",
+          "policy": "drop_oldest",
+          "to": "eventbutton-args-1-copy1.IsSelected"
+        },
+        {
+          "from": "eventbutton-args-1-copy1.out",
+          "to": "m-hidjoystick-service-1.EventButton.args",
           "capacity": 256,
           "policy": "drop_oldest"
         },
         {
-          "from": "debug-triggerbutton-1-copy1.out",
-          "to": "m-hidjoystick-service-1.EventButton.IsSelected",
+          "from": "eventbutton-args-0-copy1.out",
+          "to": "m-hidjoystick-service-1.EventButton.args",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "input-buttonhandler-1.Start El",
+          "to": "sources-iterator-El.start",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "input-buttonhandler-1.Stop El",
+          "to": "sources-iterator-El.stop",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "input-buttonhandler-1.Stop Az",
+          "to": "sources-iterator-Az.stop",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "input-buttonhandler-1.Start Az",
+          "to": "sources-iterator-Az.start",
           "capacity": 256,
           "policy": "drop_oldest"
         }
       ],
       "metadata": {
-        "description": "M_Mount.Service is the main node. A small M_Mount.Client injects azimuth/elevation movement by driving NotifyAngle (Azimuth, Elevation) and NotifyRateAbsolute (AzimuthRate, ElevationRate). The Service re-emits those on its NotifyAngle/NotifyRateAbsolute outputs, which are logged, plotted and thresholded.",
+        "description": "M_Mount.Service is the main node. A M_Mount.Client injects mount position: two Sources.Iterators sweep azimuth and elevation, are composed into a MountPositionType by Factory.M_Mount::MountPositionType, and re-emitted on ReportMountPosition - plotted via Debug.GraphDisplay after Transform.Extract pulls out Azimuth and Elevation. A M_HidJoystick Service/Client pair carries EventButton presses atomically: trigger buttons feed Factory.M_HidJoystick::EventButton_Args structs into the service, the client re-emits each as one EventButton_Args message into Input.ButtonHandler's args input, and the handler's Start Az / Stop Az / Start El / Stop El outputs start and stop the iterators.",
         "name": "onboard-example-mount-joystick"
       },
       "nodes": [
@@ -265,8 +301,8 @@
           },
           "id": "transform-extract-Az",
           "position": {
-            "x": 1888.8554630474102,
-            "y": 1483.1027342629222
+            "x": 1905.7167497086796,
+            "y": 1084.5632313601889
           },
           "type": "Transform.Extract"
         },
@@ -295,8 +331,8 @@
           },
           "id": "debug-graphdisplay-2",
           "position": {
-            "x": 2177.4115748798863,
-            "y": 1553.6096575161064
+            "x": 2174.345886396019,
+            "y": 1073.829409790893
           },
           "type": "Debug.GraphDisplay"
         },
@@ -375,8 +411,8 @@
           ],
           "id": "m-hidjoystick-service-1",
           "position": {
-            "x": 838.0790795745752,
-            "y": 1714.0060868140754
+            "x": 3128.7322951733063,
+            "y": 890.5646466864455
           },
           "type": "M_HidJoystick.Service"
         },
@@ -390,8 +426,8 @@
           ],
           "id": "m-hidjoystick-client-1",
           "position": {
-            "x": 1136.4399234474693,
-            "y": 1717.7061295912622
+            "x": -169.56007655253075,
+            "y": 903.7061295912622
           },
           "type": "M_HidJoystick.Client"
         },
@@ -401,75 +437,136 @@
               {
                 "index": 0,
                 "match": "byIndex",
-                "output": "Button 0"
+                "output": "Start Az"
               },
               {
                 "index": 1,
                 "match": "byIndex",
-                "output": "Button 1"
+                "output": "Stop Az"
+              },
+              {
+                "match": "byIndex",
+                "index": 2,
+                "output": "Start El"
+              },
+              {
+                "match": "byIndex",
+                "index": 3,
+                "output": "Stop El"
               }
-            ]
+            ],
+            "argsType": "M_HidJoystick::EventButton_Args"
           },
           "id": "input-buttonhandler-1",
           "position": {
-            "x": 1394.7644722697908,
-            "y": 1727.6116735556575
+            "x": 86.76447226979076,
+            "y": 941.6116735556575
           },
           "type": "Input.ButtonHandler"
         },
         {
           "config": {
-            "label": "Trigger",
+            "label": "Stop Az",
             "mode": "pushbutton"
           },
           "id": "debug-triggerbutton-1",
           "position": {
-            "x": 525.6415337770172,
-            "y": 1876.3270521306306
+            "x": 2506.9364667835066,
+            "y": 1130.5915042033198
           },
           "type": "Debug.TriggerButton"
         },
         {
           "config": {
-            "autoScale": true,
-            "inputType": "flowboard::Bool",
-            "timeWindowSec": 30,
-            "yMax": 1,
-            "yMin": 0
-          },
-          "id": "debug-graphdisplay-3",
-          "position": {
-            "x": 1707.3817465499856,
-            "y": 1750.805011405597
-          },
-          "type": "Debug.GraphDisplay"
-        },
-        {
-          "config": {
-            "autoScale": true,
-            "inputType": "flowboard::Bool",
-            "timeWindowSec": 30,
-            "yMax": 1,
-            "yMin": 0
-          },
-          "id": "debug-graphdisplay-3-copy1",
-          "position": {
-            "x": 1713.0270285956485,
-            "y": 1940.0703376899576
-          },
-          "type": "Debug.GraphDisplay"
-        },
-        {
-          "config": {
-            "label": "Trigger",
-            "mode": "switch"
+            "label": "Start Az",
+            "mode": "pushbutton"
           },
           "id": "debug-triggerbutton-1-copy1",
           "position": {
-            "x": 532.2558268160834,
-            "y": 1759.0911419275226
+            "x": 2504.111544256559,
+            "y": 1009.5021488746345
           },
           "type": "Debug.TriggerButton"
+        },
+        {
+          "config": {
+            "ButtonIndex": 1,
+            "ButtonName": "Btn1",
+            "IsSelected": false,
+            "autoTriggerOnNewInput": true
+          },
+          "id": "eventbutton-args-0",
+          "position": {
+            "x": 2798.140347339197,
+            "y": 1035.2884695659052
+          },
+          "type": "Factory.M_HidJoystick::EventButton_Args"
+        },
+        {
+          "config": {
+            "ButtonIndex": 0,
+            "ButtonName": "Btn0",
+            "IsSelected": false,
+            "autoTriggerOnNewInput": true
+          },
+          "id": "eventbutton-args-1",
+          "position": {
+            "x": 2793.2352457650095,
+            "y": 749.7409525819792
+          },
+          "type": "Factory.M_HidJoystick::EventButton_Args"
+        },
+        {
+          "config": {
+            "label": "Stop El",
+            "mode": "pushbutton"
+          },
+          "id": "debug-triggerbutton-1-copy2",
+          "position": {
+            "x": 2529.3815712849705,
+            "y": 1474.5525710924649
+          },
+          "type": "Debug.TriggerButton"
+        },
+        {
+          "config": {
+            "label": "Start El",
+            "mode": "pushbutton"
+          },
+          "id": "debug-triggerbutton-1-copy3",
+          "position": {
+            "x": 2518.8844916506646,
+            "y": 1355.76387233117
+          },
+          "type": "Debug.TriggerButton"
+        },
+        {
+          "config": {
+            "ButtonIndex": 3,
+            "ButtonName": "Btn3",
+            "IsSelected": false,
+            "autoTriggerOnNewInput": true
+          },
+          "id": "eventbutton-args-0-copy1",
+          "position": {
+            "x": 2796.75355280699,
+            "y": 1605.6525772749274
+          },
+          "type": "Factory.M_HidJoystick::EventButton_Args"
+        },
+        {
+          "config": {
+            "ButtonIndex": 2,
+            "ButtonName": "Btn2",
+            "IsSelected": false,
+            "autoTriggerOnNewInput": true
+          },
+          "id": "eventbutton-args-1-copy1",
+          "position": {
+            "x": 2799.51267244247,
+            "y": 1318.5722160490677
+          },
+          "type": "Factory.M_HidJoystick::EventButton_Args"
         }
       ],
       "version": "1.0"
@@ -525,8 +622,8 @@
       },
       "id": "transform-extract-Az",
       "position": {
-        "x": 1888.8554630474102,
-        "y": 1483.1027342629222
+        "x": 1905.7167497086796,
+        "y": 1084.5632313601889
       },
       "type": "Transform.Extract"
     },
@@ -555,8 +652,8 @@
       },
       "id": "debug-graphdisplay-2",
       "position": {
-        "x": 2177.4115748798863,
-        "y": 1553.6096575161064
+        "x": 2174.345886396019,
+        "y": 1073.829409790893
       },
       "type": "Debug.GraphDisplay"
     },
@@ -635,8 +732,8 @@
       ],
       "id": "m-hidjoystick-service-1",
       "position": {
-        "x": 838.0790795745752,
-        "y": 1714.0060868140754
+        "x": 3128.7322951733063,
+        "y": 890.5646466864455
       },
       "type": "M_HidJoystick.Service"
     },
@@ -650,8 +747,8 @@
       ],
       "id": "m-hidjoystick-client-1",
       "position": {
-        "x": 1136.4399234474693,
-        "y": 1717.7061295912622
+        "x": -169.56007655253075,
+        "y": 903.7061295912622
       },
       "type": "M_HidJoystick.Client"
     },
@@ -661,75 +758,136 @@
           {
             "index": 0,
             "match": "byIndex",
-            "output": "Button 0"
+            "output": "Start Az"
           },
           {
             "index": 1,
             "match": "byIndex",
-            "output": "Button 1"
+            "output": "Stop Az"
+          },
+          {
+            "match": "byIndex",
+            "index": 2,
+            "output": "Start El"
+          },
+          {
+            "match": "byIndex",
+            "index": 3,
+            "output": "Stop El"
           }
-        ]
+        ],
+        "argsType": "M_HidJoystick::EventButton_Args"
       },
       "id": "input-buttonhandler-1",
       "position": {
-        "x": 1394.7644722697908,
-        "y": 1727.6116735556575
+        "x": 86.76447226979076,
+        "y": 941.6116735556575
       },
       "type": "Input.ButtonHandler"
     },
     {
       "config": {
-        "label": "Trigger",
+        "label": "Stop Az",
         "mode": "pushbutton"
       },
       "id": "debug-triggerbutton-1",
       "position": {
-        "x": 525.6415337770172,
-        "y": 1876.3270521306306
+        "x": 2506.9364667835066,
+        "y": 1130.5915042033198
       },
       "type": "Debug.TriggerButton"
     },
     {
       "config": {
-        "autoScale": true,
-        "inputType": "flowboard::Bool",
-        "timeWindowSec": 30,
-        "yMax": 1,
-        "yMin": 0
-      },
-      "id": "debug-graphdisplay-3",
-      "position": {
-        "x": 1707.3817465499856,
-        "y": 1750.805011405597
-      },
-      "type": "Debug.GraphDisplay"
-    },
-    {
-      "config": {
-        "autoScale": true,
-        "inputType": "flowboard::Bool",
-        "timeWindowSec": 30,
-        "yMax": 1,
-        "yMin": 0
-      },
-      "id": "debug-graphdisplay-3-copy1",
-      "position": {
-        "x": 1713.0270285956485,
-        "y": 1940.0703376899576
-      },
-      "type": "Debug.GraphDisplay"
-    },
-    {
-      "config": {
-        "label": "Trigger",
-        "mode": "switch"
+        "label": "Start Az",
+        "mode": "pushbutton"
       },
       "id": "debug-triggerbutton-1-copy1",
       "position": {
-        "x": 532.2558268160834,
-        "y": 1759.0911419275226
+        "x": 2504.111544256559,
+        "y": 1009.5021488746345
       },
       "type": "Debug.TriggerButton"
+    },
+    {
+      "config": {
+        "ButtonIndex": 1,
+        "ButtonName": "Btn1",
+        "IsSelected": false,
+        "autoTriggerOnNewInput": true
+      },
+      "id": "eventbutton-args-0",
+      "position": {
+        "x": 2798.140347339197,
+        "y": 1035.2884695659052
+      },
+      "type": "Factory.M_HidJoystick::EventButton_Args"
+    },
+    {
+      "config": {
+        "ButtonIndex": 0,
+        "ButtonName": "Btn0",
+        "IsSelected": false,
+        "autoTriggerOnNewInput": true
+      },
+      "id": "eventbutton-args-1",
+      "position": {
+        "x": 2793.2352457650095,
+        "y": 749.7409525819792
+      },
+      "type": "Factory.M_HidJoystick::EventButton_Args"
+    },
+    {
+      "config": {
+        "label": "Stop El",
+        "mode": "pushbutton"
+      },
+      "id": "debug-triggerbutton-1-copy2",
+      "position": {
+        "x": 2529.3815712849705,
+        "y": 1474.5525710924649
+      },
+      "type": "Debug.TriggerButton"
+    },
+    {
+      "config": {
+        "label": "Start El",
+        "mode": "pushbutton"
+      },
+      "id": "debug-triggerbutton-1-copy3",
+      "position": {
+        "x": 2518.8844916506646,
+        "y": 1355.76387233117
+      },
+      "type": "Debug.TriggerButton"
+    },
+    {
+      "config": {
+        "ButtonIndex": 3,
+        "ButtonName": "Btn3",
+        "IsSelected": false,
+        "autoTriggerOnNewInput": true
+      },
+      "id": "eventbutton-args-0-copy1",
+      "position": {
+        "x": 2796.75355280699,
+        "y": 1605.6525772749274
+      },
+      "type": "Factory.M_HidJoystick::EventButton_Args"
+    },
+    {
+      "config": {
+        "ButtonIndex": 2,
+        "ButtonName": "Btn2",
+        "IsSelected": false,
+        "autoTriggerOnNewInput": true
+      },
+      "id": "eventbutton-args-1-copy1",
+      "position": {
+        "x": 2799.51267244247,
+        "y": 1318.5722160490677
+      },
+      "type": "Factory.M_HidJoystick::EventButton_Args"
     }
   ],
   "version": "1.0"

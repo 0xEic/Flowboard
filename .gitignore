@@ -4,6 +4,11 @@ out/
 .cache/
 .vs/
 .vscode/
+.idea/
+.superpowers/
+.claude/
+dist/
+newexamples/
 web/dist/
 web/node_modules/
 web/*.tsbuildinfo
@@ -24,3 +29,7 @@ __pycache__/
 # Test runtime artifacts
 tests/integration/*.log
 tests/integration/*.pid
+
+# Build / CTest artifacts
+build.log
+Testing/

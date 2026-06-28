@@ -18,7 +18,9 @@ set(_op_test_sources
     unit/test_derivative.cpp
     unit/test_filter.cpp
     unit/test_inverter.cpp
+    unit/test_pulse.cpp
     unit/test_throttle.cpp
+    unit/test_delay.cpp
     unit/test_iterator.cpp
     unit/test_synchronize.cpp
     unit/test_constant_source.cpp
@@ -28,6 +30,11 @@ set(_op_test_sources
     unit/test_list_ops.cpp
     unit/test_flow_machine.cpp
     unit/test_button_handler.cpp
+    unit/test_can_adapter_registry.cpp
+    unit/test_can_frame.cpp
+    unit/test_can_virtual.cpp
+    unit/test_can_filter.cpp
+    unit/test_plugin_host.cpp
     unit/test_random_source.cpp
     unit/test_arithmetic.cpp
     unit/test_number_holder.cpp
@@ -36,8 +43,14 @@ set(_op_test_sources
     unit/test_onboardapi_discovery.cpp
     unit/test_manipulate.cpp
     unit/test_coalescing_mailbox.cpp
+    unit/test_framers.cpp
+    unit/test_byte_codec.cpp
+    unit/test_byte_pack.cpp
+    unit/test_can_encode.cpp
     integration/test_extract_graph.cpp
     integration/test_keyvalue_pipeline.cpp
+    integration/test_can_bus_e2e.cpp
+    integration/test_serial_pty.cpp
 )
 # These integration tests hardcode the stub-only convenience headers
 # (onboardapi/M_Mount.hpp, sdk_stub/src/stub_bus.hpp) without #ifdef guards,
@@ -54,6 +67,9 @@ target_link_libraries(flowboard_tests PRIVATE
     flowboard_engine
     doctest::doctest
 )
+if(NOT WIN32)
+    target_link_libraries(flowboard_tests PRIVATE util)
+endif()
 if(FLOWBOARD_BUILD_CONTROL_PLANE)
     target_link_libraries(flowboard_tests PRIVATE flowboard_control)
 endif()
@@ -144,3 +160,6 @@ if(FLOWBOARD_BUILD_BENCHMARKS)
             /WHOLEARCHIVE:flowboard_engine)
     endif()
 endif()
+
+# Build test-only plugins (not part of the normal plugin discovery)
+add_subdirectory(plugins/echo_can_adapter)

@@ -15,6 +15,12 @@
 using namespace flowboard;
 
 TEST_CASE("Sinks.Log prints values it receives") {
+    // Restore the previous default logger at scope end *before* the local
+    // ostringstream destructs — otherwise subsequent spdlog::info calls in
+    // any later test write into a freed ostream and SIGSEGV after enough
+    // accumulated activity. We hit exactly that during full-suite runs.
+    auto prev_default = spdlog::default_logger();
+
     std::ostringstream os;
     auto sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(os);
     auto logger = std::make_shared<spdlog::logger>("test", sink);
@@ -35,6 +41,8 @@ TEST_CASE("Sinks.Log prints values it receives") {
     logger->flush();
     CHECK(os.str().find("altitude") != std::string::npos);
     CHECK(os.str().find("123.45") != std::string::npos);
+
+    spdlog::set_default_logger(prev_default);
 }
 
 TEST_CASE("Sinks.Log with a configured path appends to that file") {

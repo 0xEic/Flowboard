@@ -60,10 +60,16 @@ std::string emit_ts_module(ast::Module const& mod,
     ts << "// AUTO-GENERATED. Do not edit.\n";
     ts << "// SPDX-License-Identifier: MIT\n";
 
+    // Inject the synthetic <Op>_Args structs (same pass the C++ emitter runs) so the
+    // web's type list + FIELD_DESCRIPTORS expose _Args structs everywhere regular
+    // onboard struct types appear (Transform.Extract, list field-mapping, etc.).
+    ast::Module mmod = mod;
+    synthesize_args_structs(mmod, known_modules, all_typedefs);
+
     // 1. Existing struct list export.
-    ts << "export const " << mod.name << "_types = [\n";
-    for (auto const& s : mod.structs) {
-        ts << "  { name: \"" << s.name << "\", tag: \"" << mod.name << "::" << s.name << "\" },\n";
+    ts << "export const " << mmod.name << "_types = [\n";
+    for (auto const& s : mmod.structs) {
+        ts << "  { name: \"" << s.name << "\", tag: \"" << mmod.name << "::" << s.name << "\" },\n";
     }
     ts << "] as const;\n\n";
 
@@ -76,12 +82,12 @@ std::string emit_ts_module(ast::Module const& mod,
     ts << "}\n\n";
 
     // 3. Per-module FIELD_DESCRIPTORS map.
-    ts << "export const FIELD_DESCRIPTORS_" << mod.name
+    ts << "export const FIELD_DESCRIPTORS_" << mmod.name
        << ": Record<string, FieldDescriptor[]> = {\n";
-    for (auto const& s : mod.structs) {
-        ts << "  '" << mod.name << "::" << s.name << "': [\n";
+    for (auto const& s : mmod.structs) {
+        ts << "  '" << mmod.name << "::" << s.name << "': [\n";
         for (auto const& f : s.fields) {
-            auto c = classify_field_ts(*f.type, all_typedefs, mod.name, known_modules);
+            auto c = classify_field_ts(*f.type, all_typedefs, mmod.name, known_modules);
             if (c.element_tag.empty()) continue;
             ts << "    { name: '" << f.name
                << "', kind: '"     << c.kind

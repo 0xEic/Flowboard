@@ -26,8 +26,9 @@ export function ButtonHandlerForm({ nodeId }: Props) {
   return (
     <div className="space-y-2">
       <div className="text-[10px] text-slate-500">
-        Wire EventButton.ButtonIndex / ButtonName / IsSelected to the inputs. Each
-        output below emits IsSelected when its button fires.
+        Wire the M_HidJoystick client's EventButton.args output to the single
+        <code className="mx-0.5">args</code> input. Each output below emits
+        IsSelected when its button fires.
       </div>
 
       {outputs.length === 0 && (

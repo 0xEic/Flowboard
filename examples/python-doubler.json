@@ -1,0 +1,136 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "python-doubler",
+    "description": "Pipes a constant Double (21) through a Python.Script node that doubles it, then logs the result. Requires python on PATH.",
+    "authoring": {
+      "version": "1.0",
+      "metadata": {
+        "name": "python-doubler",
+        "description": "Pipes a constant Double (21) through a Python.Script node that doubles it, then logs the result. Requires python on PATH."
+      },
+      "nodes": [
+        {
+          "id": "src",
+          "type": "Transform.ConstantSource",
+          "config": {
+            "outputType": "flowboard::Double",
+            "value": 21,
+            "autoTriggerOnInit": true
+          }
+        },
+        {
+          "id": "py",
+          "type": "Python.Script",
+          "config": {
+            "inputs": [
+              {
+                "name": "x",
+                "type": "flowboard::Double"
+              }
+            ],
+            "outputs": [
+              {
+                "name": "y",
+                "type": "flowboard::Double"
+              }
+            ],
+            "script": "def on_input(port, value):\n    if port == 'x':\n        emit('y', value * 2)\n",
+            "pythonExe": ""
+          },
+          "position": {
+            "x": 340,
+            "y": 120
+          }
+        },
+        {
+          "id": "debug-valuedisplay-1",
+          "type": "Debug.ValueDisplay",
+          "config": {
+            "fields": [],
+            "inputType": "flowboard::Double"
+          },
+          "position": {
+            "x": 591.5937499999999,
+            "y": 105.48749999999998
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "src.out",
+          "to": "py.x",
+          "policy": "block",
+          "capacity": 16
+        },
+        {
+          "from": "py.y",
+          "to": "debug-valuedisplay-1.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        }
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "id": "src",
+      "type": "Transform.ConstantSource",
+      "config": {
+        "outputType": "flowboard::Double",
+        "value": 21,
+        "autoTriggerOnInit": true
+      }
+    },
+    {
+      "id": "py",
+      "type": "Python.Script",
+      "config": {
+        "inputs": [
+          {
+            "name": "x",
+            "type": "flowboard::Double"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "y",
+            "type": "flowboard::Double"
+          }
+        ],
+        "script": "def on_input(port, value):\n    if port == 'x':\n        emit('y', value * 2)\n",
+        "pythonExe": ""
+      },
+      "position": {
+        "x": 340,
+        "y": 120
+      }
+    },
+    {
+      "id": "debug-valuedisplay-1",
+      "type": "Debug.ValueDisplay",
+      "config": {
+        "fields": [],
+        "inputType": "flowboard::Double"
+      },
+      "position": {
+        "x": 591.5937499999999,
+        "y": 105.48749999999998
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "src.out",
+      "to": "py.x",
+      "policy": "block",
+      "capacity": 16
+    },
+    {
+      "from": "py.y",
+      "to": "debug-valuedisplay-1.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    }
+  ]
+}

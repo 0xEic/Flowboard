@@ -35,7 +35,7 @@ $PWD/docs/ARCHITECTURE.md $PWD/docs/NODES.md $PWD/docs/ADDING_A_NODE.md \
 $PWD/docs/ADR-001-backpressure.md $PWD/docs/INTEGRATING_THE_REAL_SDK.md"
           sed \
             -e "s|@PROJECT_NAME@|Flowboard|g" \
-            -e "s|@PROJECT_VERSION@|1.0.0|g" \
+            -e "s|@PROJECT_VERSION@|1.1.0|g" \
             -e "s|@PROJECT_DESCRIPTION@|Configurable pipe-and-filter workflow engine for OnboardAPI|g" \
             -e "s|@DOXYGEN_OUTPUT_DIR@|$PWD/site|g" \
             -e "s|@CMAKE_SOURCE_DIR@|$PWD|g" \

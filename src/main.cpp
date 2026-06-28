@@ -9,10 +9,12 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <filesystem>
 #include "flowboard/loader.hpp"
 #include "flowboard/log.hpp"
 #include "flowboard/graph_holder.hpp"
 #include "flowboard/app_info.hpp"
+#include "flowboard/plugin_host.hpp"
 
 #if defined(FLOWBOARD_HAS_CONTROL_PLANE)
 #  include "flowboard/control_plane.hpp"
@@ -57,6 +59,7 @@ struct Args {
     std::uint16_t control_port        = 8765;
     bool          serve_control_plane = true;
     bool          dump_nodes          = false;
+    std::string   plugins_dir;  ///< Override for the plugin folder (see --plugins).
 };
 
 bool parse_args(int argc, char** argv, Args& out) {
@@ -68,6 +71,8 @@ bool parse_args(int argc, char** argv, Args& out) {
             out.bind_host = argv[++i];
         } else if (a == "--no-control-plane") {
             out.serve_control_plane = false;
+        } else if (a == "--plugins" && i + 1 < argc) {
+            out.plugins_dir = argv[++i];
         } else if (a == "--dump-nodes") {
             out.dump_nodes = true;
         } else if (!a.empty() && a[0] == '-') {
@@ -86,21 +91,55 @@ bool parse_args(int argc, char** argv, Args& out) {
     return true;
 }
 
+// Absolute path of the running executable, or empty if it cannot be determined.
+std::filesystem::path executable_path() {
+#if defined(_WIN32)
+    wchar_t buf[MAX_PATH];
+    DWORD n = ::GetModuleFileNameW(nullptr, buf, MAX_PATH);
+    if (n == 0 || n >= MAX_PATH) return {};
+    return std::filesystem::path(std::wstring(buf, n));
+#elif defined(__linux__)
+    std::error_code ec;
+    auto p = std::filesystem::read_symlink("/proc/self/exe", ec);
+    return ec ? std::filesystem::path{} : p;
+#else
+    return {};
+#endif
+}
+
+// Where to look for plugins: --plugins wins, then $FLOWBOARD_PLUGIN_DIR, then a
+// "plugins" folder next to the executable (falling back to the CWD).
+std::filesystem::path resolve_plugin_dir(Args const& args) {
+    if (!args.plugins_dir.empty()) return std::filesystem::path(args.plugins_dir);
+    if (char const* env = std::getenv("FLOWBOARD_PLUGIN_DIR"); env && *env)
+        return std::filesystem::path(env);
+    auto exe = executable_path();
+    return (exe.empty() ? std::filesystem::path(".") : exe.parent_path()) / "plugins";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
     Args args;
     if (!parse_args(argc, argv, args)) {
-        std::cerr << "usage: flowboard [--port N] [--bind HOST] [--no-control-plane] [graph.json]\n"
+        std::cerr << "usage: flowboard [--port N] [--bind HOST] [--plugins DIR] [--no-control-plane] [graph.json]\n"
                      "       (omit graph.json to start on an empty canvas)\n"
                      "       flowboard --dump-nodes\n";
         return 64;
     }
 
+    flowboard::log::init();
+    // Keep stdout pure JSON for --dump-nodes by silencing diagnostics up front.
+    if (args.dump_nodes) spdlog::set_level(spdlog::level::off);
+
+    // Load node plugins before anything reads the registry, so their types show
+    // up in --dump-nodes, the web catalog, and any graph that references them.
+    // Declared here so it outlives the graph + server (destroyed last).
+    flowboard::PluginHost plugin_host;
+    plugin_host.load_directory(resolve_plugin_dir(args));
+
     if (args.dump_nodes) {
 #if defined(FLOWBOARD_HAS_CONTROL_PLANE)
-        // Keep stdout pure JSON: silence the registry-probe diagnostics.
-        spdlog::set_level(spdlog::level::off);
         std::cout << flowboard::control::catalog_json_string() << "\n";
         return 0;
 #else
@@ -108,8 +147,6 @@ int main(int argc, char** argv) {
         return 70;
 #endif
     }
-
-    flowboard::log::init();
 
     nlohmann::json doc;
     if (args.config_path.empty()) {

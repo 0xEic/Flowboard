@@ -1,33 +1,31 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include <memory>
-#include <nlohmann/json.hpp>
 #include <string>
 #include <string_view>
 #include <vector>
 
 namespace flowboard {
 
-class Node;
+class ISyncCell;
 
 /// \file
-/// \brief Type-keyed registry of flowboard::SynchronizeT factories for building Transform.Synchronize nodes.
+/// \brief Type-keyed registry of SyncCellT factories for Transform.Synchronize.
 
-/// \brief Per-type Transform.Synchronize factory. Closed over a specific element type at
-/// registration (in sync_node.cpp for primitives, in generated *_nodes.cpp for
-/// onboardapi structs). Receives the full node config so it can read inputCount
-/// and order alongside inputType.
+/// \brief Builds one latched in/out pair (cell) of a specific element type.
+/// Registered per primitive in sync_node.cpp and per struct in generated
+/// *_nodes.cpp. The node names the ports (in{i}/out{i}).
 using SynchronizeFactoryFn =
-    std::unique_ptr<Node>(*)(std::string id, ::nlohmann::json const& cfg);
+    std::unique_ptr<ISyncCell>(*)(std::string in_name, std::string out_name);
 
-/// \brief Registers a Synchronize factory under the given element type tag.
+/// \brief Registers a Synchronize cell factory under the given element type tag.
 void register_synchronize_factory(std::string type_name, SynchronizeFactoryFn fn);
 
 /// \brief Returns nullptr if no factory was registered for type_name.
 SynchronizeFactoryFn lookup_synchronize_factory(std::string_view type_name);
 
-/// \brief Snapshot of currently registered type tags (primitives + structs), used by the
-/// web Inspector to populate the Synchronize value-type dropdown.
+/// \brief Snapshot of registered type tags (primitives + structs), used by the
+/// web Inspector to populate the Synchronize per-input type dropdowns.
 std::vector<std::string> registered_synchronize_types();
 
 }  // namespace flowboard
@@ -35,7 +33,7 @@ std::vector<std::string> registered_synchronize_types();
 #define OP_SYNC_CAT_(a, b) a##b
 #define OP_SYNC_CAT(a, b)  OP_SYNC_CAT_(a, b)
 
-/// \brief Registers a Synchronize factory for a type at static-init time.
+/// \brief Registers a Synchronize cell factory for a type at static-init time.
 #define OP_REGISTER_SYNCHRONIZE_FACTORY(TypeNameStr, FactoryFn)                    \
     namespace {                                                                    \
     const bool OP_SYNC_CAT(_op_sync_reg_, __COUNTER__) = [] {                     \

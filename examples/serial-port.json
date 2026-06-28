@@ -1,0 +1,596 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "serial-port",
+    "description": "Serial byte-stream + framing demo - no Python. A Sources.Iterator counter drives Bytes.Pack (auto-emit on each step), which assembles a fixed 4-byte record [len=3, count, 0x2A '*', 0x0A LF] (the three constants come from the 'defaults' block, the counter is wired). That record is sent out 'serial-tx' (COM3); 'serial-rx' (COM4) reads the stream and Framer.Fixed (frameSize 4) reassembles each 4-byte record, which Bytes.Unpack decodes (count at byte offset 1). Two Debug.ValueDisplay nodes show the raw packed bytes and the reframed bytes. Covers Serial.Port (x2), Framer.Fixed, and Bytes.Pack/Unpack. Runs as-is over a com0com COM3<->COM4 virtual pair; for real hardware point 'serial-tx' and 'serial-rx' at your device(s) or use one Serial.Port with a hardware TX-RX loopback. Swap Framer.Fixed for Framer.Delimiter (LF-delimited) or Framer.LengthPrefix (1-byte length) to frame the same stream by separator or length.",
+    "authoring": {
+      "version": "1.0",
+      "metadata": {
+        "name": "serial-port",
+        "description": "Serial byte-stream + framing demo - no Python. A Sources.Iterator counter drives Bytes.Pack (auto-emit on each step), which assembles a fixed 4-byte record [len=3, count, 0x2A '*', 0x0A LF] (the three constants come from the 'defaults' block, the counter is wired). That record is sent out 'serial-tx' (COM3); 'serial-rx' (COM4) reads the stream and Framer.Fixed (frameSize 4) reassembles each 4-byte record, which Bytes.Unpack decodes (count at byte offset 1). Two Debug.ValueDisplay nodes show the raw packed bytes and the reframed bytes. Covers Serial.Port (x2), Framer.Fixed, and Bytes.Pack/Unpack. Runs as-is over a com0com COM3<->COM4 virtual pair; for real hardware point 'serial-tx' and 'serial-rx' at your device(s) or use one Serial.Port with a hardware TX-RX loopback. Swap Framer.Fixed for Framer.Delimiter (LF-delimited) or Framer.LengthPrefix (1-byte length) to frame the same stream by separator or length."
+      },
+      "nodes": [
+        {
+          "id": "counter",
+          "type": "Sources.Iterator",
+          "position": {
+            "x": -28.641443681043597,
+            "y": -266.7635882730826
+          },
+          "config": {
+            "autoReverse": false,
+            "autostart": true,
+            "endValue": 255,
+            "loop": true,
+            "specialEndEndValue": "linear",
+            "specialEndStartValue": "linear",
+            "specialStartEndValue": "linear",
+            "specialStartStartValue": "linear",
+            "startValue": 0,
+            "stepSize": 1,
+            "timeBetweenStepsMs": 200,
+            "valueType": "flowboard::UInt8"
+          }
+        },
+        {
+          "id": "pack",
+          "type": "Bytes.Pack",
+          "position": {
+            "x": 330,
+            "y": 220
+          },
+          "config": {
+            "endian": "little",
+            "length": 4,
+            "autoTriggerOnNewInput": true,
+            "fields": [
+              {
+                "name": "len",
+                "type": "flowboard::UInt8",
+                "offset": 0
+              },
+              {
+                "name": "count",
+                "type": "flowboard::UInt8",
+                "offset": 1
+              },
+              {
+                "name": "marker",
+                "type": "flowboard::UInt8",
+                "offset": 2
+              },
+              {
+                "name": "nl",
+                "type": "flowboard::UInt8",
+                "offset": 3
+              }
+            ],
+            "defaults": {
+              "len": 3,
+              "marker": 42,
+              "nl": 10
+            }
+          }
+        },
+        {
+          "id": "serial-tx",
+          "type": "Serial.Port",
+          "position": {
+            "x": 600,
+            "y": 220
+          },
+          "config": {
+            "port": "COM3",
+            "baudRate": 115200,
+            "dataBits": 8,
+            "parity": "none",
+            "stopBits": 1,
+            "flowControl": "none",
+            "readChunkSize": 1024,
+            "readTimeoutMs": 10,
+            "autoReconnect": true,
+            "reconnectIntervalMs": 1000
+          }
+        },
+        {
+          "id": "serial-rx",
+          "type": "Serial.Port",
+          "position": {
+            "x": 600,
+            "y": 460
+          },
+          "config": {
+            "port": "COM4",
+            "baudRate": 115200,
+            "dataBits": 8,
+            "parity": "none",
+            "stopBits": 1,
+            "flowControl": "none",
+            "readChunkSize": 1024,
+            "readTimeoutMs": 10,
+            "autoReconnect": true,
+            "reconnectIntervalMs": 1000
+          }
+        },
+        {
+          "id": "framer-fixed",
+          "type": "Framer.Fixed",
+          "position": {
+            "x": 893.4387966052079,
+            "y": 494.7043558677026
+          },
+          "config": {
+            "frameSize": 4
+          }
+        },
+        {
+          "id": "unpack-fixed",
+          "type": "Bytes.Unpack",
+          "position": {
+            "x": 1153.438796605208,
+            "y": 494.7043558677026
+          },
+          "config": {
+            "endian": "little",
+            "fields": [
+              {
+                "name": "count",
+                "type": "flowboard::UInt8",
+                "offset": 1
+              }
+            ]
+          }
+        },
+        {
+          "id": "plot-fixed",
+          "type": "Debug.GraphDisplay",
+          "position": {
+            "x": 1413.438796605208,
+            "y": 454.7043558677026
+          },
+          "width": 340,
+          "height": 200,
+          "config": {
+            "inputType": "flowboard::UInt8",
+            "timeWindowSec": 30,
+            "autoScale": true,
+            "yMin": 0,
+            "yMax": 255
+          }
+        },
+        {
+          "id": "log-frame",
+          "type": "Sinks.Log",
+          "position": {
+            "x": 1040.7596558384648,
+            "y": 323.69174831722285
+          },
+          "config": {
+            "inputType": "flowboard::List",
+            "prefix": "serial.rx frame (fixed)"
+          }
+        },
+        {
+          "id": "tx-connected",
+          "type": "Debug.ValueDisplay",
+          "position": {
+            "x": 600,
+            "y": 60
+          },
+          "width": 220,
+          "height": 110,
+          "config": {
+            "inputType": "flowboard::Bool",
+            "fields": []
+          }
+        },
+        {
+          "id": "rx-connected",
+          "type": "Debug.ValueDisplay",
+          "position": {
+            "x": 600,
+            "y": 700
+          },
+          "width": 220,
+          "height": 110,
+          "config": {
+            "inputType": "flowboard::Bool",
+            "fields": []
+          }
+        },
+        {
+          "id": "note-wire",
+          "type": "Note",
+          "position": {
+            "x": 307.1534139592691,
+            "y": -112.87437388469846
+          },
+          "width": 360,
+          "height": 150,
+          "config": {
+            "text": "SERIAL needs a link to move bytes. This example self-runs over a com0com virtual pair (COM3<->COM4): 'serial-tx' writes COM3, 'serial-rx' reads COM4. For real hardware, point both at your device(s), or use a single Serial.Port with its TX and RX pins shorted (hardware loopback). The Sources.Iterator drives Bytes.Pack directly, so one 4-byte record is emitted per step and the counter advances by exactly one each frame (no clock drift)."
+          }
+        },
+        {
+          "id": "note-framers",
+          "type": "Note",
+          "position": {
+            "x": 858.2911747146641,
+            "y": -38.20659057651923
+          },
+          "width": 380,
+          "height": 200,
+          "config": {
+            "text": "This record [len=3, count, 0x2A, 0x0A] can be framed several ways. This example wires Framer.Fixed (frameSize 4), which keeps the whole 4-byte record; Bytes.Unpack then reads count at byte offset 1. Swap in Framer.Delimiter (split on the 0x0A byte; yields [3, count, 0x2A], count at offset 1) or Framer.LengthPrefix (1-byte length; reads len=3 and emits [count, 0x2A, 0x0A], count at offset 0). Pick the framer matching your real protocol."
+          }
+        },
+        {
+          "id": "debug-valuedisplay-1",
+          "type": "Debug.ValueDisplay",
+          "config": {
+            "fields": [],
+            "inputType": "flowboard::List"
+          },
+          "position": {
+            "x": 320.488601657094,
+            "y": 621.0486672347132
+          },
+          "width": 229,
+          "height": 173
+        },
+        {
+          "id": "debug-valuedisplay-2",
+          "type": "Debug.ValueDisplay",
+          "config": {
+            "fields": [],
+            "inputType": "flowboard::List"
+          },
+          "position": {
+            "x": 1405.9298659238855,
+            "y": 259.23491247911613
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "counter.value",
+          "to": "pack.count",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "pack.out",
+          "to": "serial-tx.tx",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "serial-rx.rx",
+          "to": "framer-fixed.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "framer-fixed.out",
+          "to": "unpack-fixed.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "framer-fixed.out",
+          "to": "log-frame.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "unpack-fixed.count",
+          "to": "plot-fixed.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "serial-tx.connected",
+          "to": "tx-connected.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "serial-rx.connected",
+          "to": "rx-connected.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "pack.out",
+          "to": "debug-valuedisplay-1.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "framer-fixed.out",
+          "to": "debug-valuedisplay-2.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        }
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "id": "counter",
+      "type": "Sources.Iterator",
+      "position": {
+        "x": -28.641443681043597,
+        "y": -266.7635882730826
+      },
+      "config": {
+        "autoReverse": false,
+        "autostart": true,
+        "endValue": 255,
+        "loop": true,
+        "specialEndEndValue": "linear",
+        "specialEndStartValue": "linear",
+        "specialStartEndValue": "linear",
+        "specialStartStartValue": "linear",
+        "startValue": 0,
+        "stepSize": 1,
+        "timeBetweenStepsMs": 200,
+        "valueType": "flowboard::UInt8"
+      }
+    },
+    {
+      "id": "pack",
+      "type": "Bytes.Pack",
+      "position": {
+        "x": 330,
+        "y": 220
+      },
+      "config": {
+        "endian": "little",
+        "length": 4,
+        "autoTriggerOnNewInput": true,
+        "fields": [
+          {
+            "name": "len",
+            "type": "flowboard::UInt8",
+            "offset": 0
+          },
+          {
+            "name": "count",
+            "type": "flowboard::UInt8",
+            "offset": 1
+          },
+          {
+            "name": "marker",
+            "type": "flowboard::UInt8",
+            "offset": 2
+          },
+          {
+            "name": "nl",
+            "type": "flowboard::UInt8",
+            "offset": 3
+          }
+        ],
+        "defaults": {
+          "len": 3,
+          "marker": 42,
+          "nl": 10
+        }
+      }
+    },
+    {
+      "id": "serial-tx",
+      "type": "Serial.Port",
+      "position": {
+        "x": 600,
+        "y": 220
+      },
+      "config": {
+        "port": "COM3",
+        "baudRate": 115200,
+        "dataBits": 8,
+        "parity": "none",
+        "stopBits": 1,
+        "flowControl": "none",
+        "readChunkSize": 1024,
+        "readTimeoutMs": 10,
+        "autoReconnect": true,
+        "reconnectIntervalMs": 1000
+      }
+    },
+    {
+      "id": "serial-rx",
+      "type": "Serial.Port",
+      "position": {
+        "x": 600,
+        "y": 460
+      },
+      "config": {
+        "port": "COM4",
+        "baudRate": 115200,
+        "dataBits": 8,
+        "parity": "none",
+        "stopBits": 1,
+        "flowControl": "none",
+        "readChunkSize": 1024,
+        "readTimeoutMs": 10,
+        "autoReconnect": true,
+        "reconnectIntervalMs": 1000
+      }
+    },
+    {
+      "id": "framer-fixed",
+      "type": "Framer.Fixed",
+      "position": {
+        "x": 893.4387966052079,
+        "y": 494.7043558677026
+      },
+      "config": {
+        "frameSize": 4
+      }
+    },
+    {
+      "id": "unpack-fixed",
+      "type": "Bytes.Unpack",
+      "position": {
+        "x": 1153.438796605208,
+        "y": 494.7043558677026
+      },
+      "config": {
+        "endian": "little",
+        "fields": [
+          {
+            "name": "count",
+            "type": "flowboard::UInt8",
+            "offset": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "plot-fixed",
+      "type": "Debug.GraphDisplay",
+      "position": {
+        "x": 1413.438796605208,
+        "y": 454.7043558677026
+      },
+      "width": 340,
+      "height": 200,
+      "config": {
+        "inputType": "flowboard::UInt8",
+        "timeWindowSec": 30,
+        "autoScale": true,
+        "yMin": 0,
+        "yMax": 255
+      }
+    },
+    {
+      "id": "log-frame",
+      "type": "Sinks.Log",
+      "position": {
+        "x": 1040.7596558384648,
+        "y": 323.69174831722285
+      },
+      "config": {
+        "inputType": "flowboard::List",
+        "prefix": "serial.rx frame (fixed)"
+      }
+    },
+    {
+      "id": "tx-connected",
+      "type": "Debug.ValueDisplay",
+      "position": {
+        "x": 600,
+        "y": 60
+      },
+      "width": 220,
+      "height": 110,
+      "config": {
+        "inputType": "flowboard::Bool",
+        "fields": []
+      }
+    },
+    {
+      "id": "rx-connected",
+      "type": "Debug.ValueDisplay",
+      "position": {
+        "x": 600,
+        "y": 700
+      },
+      "width": 220,
+      "height": 110,
+      "config": {
+        "inputType": "flowboard::Bool",
+        "fields": []
+      }
+    },
+    {
+      "id": "debug-valuedisplay-1",
+      "type": "Debug.ValueDisplay",
+      "config": {
+        "fields": [],
+        "inputType": "flowboard::List"
+      },
+      "position": {
+        "x": 320.488601657094,
+        "y": 621.0486672347132
+      },
+      "width": 229,
+      "height": 173
+    },
+    {
+      "id": "debug-valuedisplay-2",
+      "type": "Debug.ValueDisplay",
+      "config": {
+        "fields": [],
+        "inputType": "flowboard::List"
+      },
+      "position": {
+        "x": 1405.9298659238855,
+        "y": 259.23491247911613
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "counter.value",
+      "to": "pack.count",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "pack.out",
+      "to": "serial-tx.tx",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "serial-rx.rx",
+      "to": "framer-fixed.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "framer-fixed.out",
+      "to": "unpack-fixed.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "framer-fixed.out",
+      "to": "log-frame.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "unpack-fixed.count",
+      "to": "plot-fixed.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "serial-tx.connected",
+      "to": "tx-connected.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "serial-rx.connected",
+      "to": "rx-connected.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "pack.out",
+      "to": "debug-valuedisplay-1.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "framer-fixed.out",
+      "to": "debug-valuedisplay-2.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    }
+  ]
+}

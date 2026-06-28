@@ -2,6 +2,8 @@
 import { useRef } from 'react';
 import { useGraphStore } from '../store/graph_store';
 import { toSavedFile, fromSavedFile } from '../lib/group_compile';
+import { SHOW_INTRO_EVENT } from './IntroTour';
+import { openHelp } from '../help/HelpPanel';
 import type { GraphJson } from '../api/types';
 
 export function TopBar() {
@@ -13,6 +15,8 @@ export function TopBar() {
   const running = useGraphStore(s => s.running);
   const editingMachineId = useGraphStore(s => s.editingMachineId);
   const closeMachine     = useGraphStore(s => s.closeMachine);
+  const closeSubmachine  = useGraphStore(s => s.closeSubmachine);
+  const machineStack     = useGraphStore(s => s.machineStack);
   const groupStack       = useGraphStore(s => s.groupStack);
   const loadGraph        = useGraphStore(s => s.loadGraph);
   const fileInputRef     = useRef<HTMLInputElement>(null);
@@ -71,7 +75,7 @@ export function TopBar() {
   };
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-slate-800 border-b border-slate-700">
+    <div data-tour="topbar" className="flex items-center gap-3 px-4 py-2 bg-slate-800 border-b border-slate-700">
       <div className="font-semibold">Flowboard</div>
       {editingMachineId ? (
         <div className="flex items-center gap-1 text-sm">
@@ -80,8 +84,23 @@ export function TopBar() {
             onClick={() => closeMachine()}
             title="Compile the inner canvas back into the machine and return to the graph"
           >graph</button>
-          <span className="text-slate-600">/</span>
-          <span className="text-sky-300">{editingMachineId}</span>
+          {/* root machine + nested substate path; intermediate levels pop back up */}
+          {[{ label: editingMachineId, depth: 0 },
+            ...machineStack.map((m, i) => ({ label: m.stateName, depth: i + 1 }))
+          ].map((seg, i, arr) => (
+            <span key={seg.depth} className="flex items-center gap-1">
+              <span className="text-slate-600">/</span>
+              {i < arr.length - 1 ? (
+                <button
+                  className="text-slate-400 hover:text-slate-100"
+                  onClick={() => { while (useGraphStore.getState().machineStack.length > seg.depth) { if (!closeSubmachine()) break; } }}
+                  title={`Back to ${seg.label}`}
+                >{seg.label}</button>
+              ) : (
+                <span className="text-sky-300">{seg.label}</span>
+              )}
+            </span>
+          ))}
         </div>
       ) : groupStack.length > 0 ? (
         <div className="flex items-center gap-1 text-sm">
@@ -128,6 +147,7 @@ export function TopBar() {
               title="Auto-arrange nodes: layered left-to-right, no overlaps, fewer crossing links (undoable)"
             >Auto-arrange</button>
             <button
+              data-tour="apply"
               className="px-3 py-1 bg-sky-700 hover:bg-sky-600 rounded text-sm"
               onClick={async () => {
                 const errs = await reload();
@@ -156,6 +176,18 @@ export function TopBar() {
             {running
               ? <button className="px-3 py-1 bg-amber-700 hover:bg-amber-600 rounded text-sm" onClick={pause}>Pause</button>
               : <button className="px-3 py-1 bg-emerald-700 hover:bg-emerald-600 rounded text-sm" onClick={resume}>Resume</button>}
+            <button
+              className="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm"
+              onClick={() => openHelp()}
+              title="Open the in-app node reference"
+              aria-label="Open node help"
+            >Help</button>
+            <button
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-700 hover:bg-slate-600 text-sm font-semibold"
+              onClick={() => window.dispatchEvent(new Event(SHOW_INTRO_EVENT))}
+              title="Show the quick introduction tour"
+              aria-label="Show introduction tour"
+            >?</button>
           </>
         )}
       </div>

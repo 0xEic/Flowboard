@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include <cstdint>
+#include <functional>
 #include <memory>
-#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -9,16 +9,22 @@
 #include "builtin_types.hpp"
 #include "flowboard/node.hpp"
 #include "flowboard/port.hpp"
+#include "flowboard/port_factory_registry.hpp"
 #include "flowboard/registry.hpp"
+#include <nlohmann/json.hpp>
 
 namespace flowboard::nodes {
 
 // Input.ButtonHandler — fans a HidJoystick EventButton stream out to one bool
-// port per button of interest. EventButton decomposes (on the M_HidJoystick
-// client node) into three values per press/release: ButtonIndex (UInt32),
-// ButtonName (String) and IsSelected (Bool). Wire those three to this node's
-// like-named inputs; each configured output then emits IsSelected ("isPressed")
-// whenever an event for its button arrives.
+// port per button of interest. EventButton arrives atomically as a single
+// M_HidJoystick::EventButton_Args struct on the "args" input (fields
+// ButtonIndex, ButtonName, IsSelected). Wire the M_HidJoystick client's
+// EventButton.args output to this node's "args" input; each configured output
+// then emits IsSelected ("isPressed") whenever an event for its button arrives.
+//
+// Receiving the whole event in one message (rather than three separate scalar
+// inputs) eliminates cross-edge ordering races: the index/name/pressed that
+// belong to one press always travel together.
 //
 // Config:
 //   outputs: array of { output?, match, index?, buttonName? }
@@ -27,50 +33,51 @@ namespace flowboard::nodes {
 //     buttonName: button name to match when match=="byName".
 //     output:     output port name; defaults to "button<index>" (byIndex) or the
 //                 button name (byName).
+//   argsType:   the struct type tag delivered on "args" (default
+//               "M_HidJoystick::EventButton_Args"); overridable for compatible
+//               EventButton-like structs.
 //
 // Derived ports:
-//   inputs:  ButtonIndex (UInt32), ButtonName (String), IsSelected (Bool).
+//   inputs:  args (EventButton_Args struct).
 //   outputs: one Bool port per configured output.
-//
-// IsSelected is the trigger: a press/release arrives as ButtonIndex then
-// ButtonName then IsSelected, so the index/name latched when IsSelected lands
-// belong to that event. byIndex outputs need only ButtonIndex wired; byName
-// outputs need only ButtonName.
 class ButtonHandler final : public Node {
 public:
     ButtonHandler(std::string id, ::nlohmann::json const& cfg)
-        : Node(std::move(id), "Input.ButtonHandler"),
-          button_index_in_("ButtonIndex"),
-          button_name_in_("ButtonName"),
-          is_selected_in_("IsSelected") {
-        register_input(&button_index_in_);
-        register_input(&button_name_in_);
-        register_input(&is_selected_in_);
-
+        : Node(std::move(id), "Input.ButtonHandler") {
         if (cfg.contains("outputs")) {
             if (!cfg["outputs"].is_array())
                 throw std::runtime_error("Input.ButtonHandler: 'outputs' must be an array");
             for (auto const& o : cfg["outputs"])
                 add_output(o);
         }
-    }
 
-    void on_start() override {
-        button_index_in_.set_internal_sink([this](InputPort<std::uint32_t>::Value v) {
-            if (!v) return;
-            auto idx = *v;
-            enqueue([this, idx] { last_index_ = idx; });
+        // Single atomic struct input: the whole EventButton in one message.
+        // Defaults to the HidJoystick EventButton_Args struct; overridable via
+        // argsType for other EventButton-shaped structs.
+        std::string argsType =
+            cfg.value("argsType", std::string("M_HidJoystick::EventButton_Args"));
+        auto const* entry = ::flowboard::lookup_port_factory(argsType);
+        if (!entry)
+            throw std::runtime_error(
+                "Input.ButtonHandler: argsType '" + argsType +
+                "' is not a registered port factory type");
+
+        auto args_in = entry->make_input("args", [this](::nlohmann::json j) {
+            // Parse the three fields from the struct JSON and dispatch atomically
+            // on the node worker thread.
+            try {
+                auto idx     = j.at("ButtonIndex").get<std::uint32_t>();
+                auto name    = j.at("ButtonName").get<std::string>();
+                auto pressed = j.at("IsSelected").get<bool>();
+                enqueue([this, idx, name = std::move(name), pressed] {
+                    dispatch_atomic(idx, name, pressed);
+                });
+            } catch (...) {
+                // Malformed message — silently drop.
+            }
         });
-        button_name_in_.set_internal_sink([this](InputPort<std::string>::Value v) {
-            if (!v) return;
-            auto name = *v;
-            enqueue([this, name = std::move(name)] { last_name_ = name; });
-        });
-        is_selected_in_.set_internal_sink([this](InputPort<bool>::Value v) {
-            if (!v) return;
-            bool pressed = *v;
-            enqueue([this, pressed] { dispatch(pressed); });
-        });
+        register_input(args_in.get());
+        args_in_storage_ = std::move(args_in);
     }
 
 private:
@@ -118,24 +125,21 @@ private:
         specs_.push_back(std::move(spec));
     }
 
-    void dispatch(bool pressed) {
+    // All three fields arrive together — no cached state needed.
+    void dispatch_atomic(std::uint32_t idx, std::string const& name, bool pressed) {
         for (auto const& s : specs_) {
-            bool match = s.by_index ? (last_index_ && *last_index_ == s.index)
-                                    : (last_name_  && *last_name_  == s.name);
+            bool match = s.by_index ? (idx == s.index)
+                                    : (name == s.name);
             if (match)
                 s.port->emit(std::make_shared<const bool>(pressed));
         }
     }
 
-    InputPort<std::uint32_t> button_index_in_;
-    InputPort<std::string>   button_name_in_;
-    InputPort<bool>          is_selected_in_;
+    // The single atomic struct input (the whole EventButton in one message).
+    std::unique_ptr<IInputPort> args_in_storage_;
 
     std::vector<std::unique_ptr<OutputPort<bool>>> ports_;
     std::vector<OutputSpec>                        specs_;
-
-    std::optional<std::uint32_t> last_index_;
-    std::optional<std::string>   last_name_;
 };
 
 OP_REGISTER_NODE_WITH_SCHEMA(
@@ -145,7 +149,7 @@ OP_REGISTER_NODE_WITH_SCHEMA(
       "$schema":"http://json-schema.org/draft-07/schema#",
       "type":"object",
       "title":"Button Handler",
-      "description":"Routes HidJoystick EventButton presses to one bool output per button. Wire EventButton.ButtonIndex/ButtonName/IsSelected to the inputs of the same name.",
+      "description":"Routes a HidJoystick EventButton (received atomically on the 'args' struct input) to one bool output per button. Wire the M_HidJoystick client's EventButton.args output to the 'args' input. Each output emits IsSelected when its button fires.",
       "properties":{
         "outputs":{
           "type":"array","title":"Outputs",
@@ -163,10 +167,16 @@ OP_REGISTER_NODE_WITH_SCHEMA(
                         "description":"Output port name. Defaults to button<index> or the button name."}
             }
           }
+        },
+        "argsType":{
+          "type":"string",
+          "title":"Args struct type",
+          "default":"M_HidJoystick::EventButton_Args",
+          "description":"The EventButton-like struct type tag delivered atomically on the 'args' input. Defaults to M_HidJoystick::EventButton_Args."
         }
       },
       "additionalProperties":false
     })JSON",
-    R"JSON({"outputs":[]})JSON")
+    R"JSON({"outputs":[],"argsType":"M_HidJoystick::EventButton_Args"})JSON")
 
 }  // namespace flowboard::nodes

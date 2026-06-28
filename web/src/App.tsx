@@ -7,6 +7,8 @@ import { MachineCanvas } from './components/MachineCanvas';
 import { Inspector } from './components/Inspector';
 import { LogTail } from './components/LogTail';
 import { TypeChangeModal } from './components/TypeChangeModal';
+import { IntroTour } from './components/IntroTour';
+import { HelpPanel } from './help/HelpPanel';
 import { useGraphStore } from './store/graph_store';
 import { nodePorts } from './lib/node_ports';
 import { resolveTapKey } from './lib/group_compile';
@@ -72,6 +74,8 @@ export function App() {
       </div>
       <LogTail />
       <TypeChangeModal />
+      <IntroTour />
+      <HelpPanel />
     </div>
   );
 }

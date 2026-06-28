@@ -485,7 +485,7 @@ TEST_CASE("emit_cpp_for_module emits per-struct Factory node + registration") {
           != std::string::npos);
 }
 
-TEST_CASE("emit_cpp_for_module Factory skips Optional/List fields") {
+TEST_CASE("emit_cpp_for_module Factory emits element-typed ports for Optional fields") {
     pipegen::ast::Module mod;
     mod.name = "M_Mount";
     pipegen::ast::StructDecl s;
@@ -524,7 +524,415 @@ TEST_CASE("emit_cpp_for_module Factory skips Optional/List fields") {
     CHECK(r.nodes_cpp.find("in_Pos_(\"Pos\")") != std::string::npos);
     CHECK(r.nodes_cpp.find("::flowboard::InputPort<::M_Common::PositionType> in_Pos_;")
           != std::string::npos);
-    // Optional field must be skipped with a comment marker (no input port)
-    CHECK(r.nodes_cpp.find("// skipped factory input 'Elevation'") != std::string::npos);
-    CHECK(r.nodes_cpp.find("in_Elevation_") == std::string::npos);
+    // Optional fields are now supported: an Optional<T> (sequence<T,1>) field
+    // becomes an input port of the element type T — emitted, not skipped.
+    CHECK(r.nodes_cpp.find("in_Elevation_") != std::string::npos);
+    CHECK(r.nodes_cpp.find("// skipped factory input 'Elevation'") == std::string::npos);
+}
+
+TEST_CASE("emit_cpp_for_module synthesizes EventButton_Args struct for multi-param IClient op") {
+    // Build M_HidJoystick with IClient::EventButton(unsigned long, string, boolean)
+    // The emitter should synthesise an EventButton_Args struct with those three fields
+    // and emit it through the normal struct pipeline (struct def, to_json, from_json,
+    // OP_DECLARE_TYPE with the expected tag, FieldDescriptor[]).
+    pipegen::ast::Module mod;
+    mod.name = "M_HidJoystick";
+
+    auto make_prim_field = [](std::string name, std::string prim_name) -> pipegen::ast::OpParam {
+        pipegen::ast::OpParam p;
+        p.name = std::move(name);
+        p.direction = "in";
+        p.type = std::make_shared<pipegen::ast::TypeRef>();
+        p.type->value = pipegen::ast::PrimitiveType{std::move(prim_name), std::nullopt};
+        return p;
+    };
+
+    pipegen::ast::InterfaceDecl iclient;
+    iclient.name = "IClient";
+    pipegen::ast::Operation op;
+    op.name = "EventButton";
+    op.params.push_back(make_prim_field("ButtonIndex", "unsigned long"));
+    op.params.push_back(make_prim_field("ButtonName",  "string"));
+    op.params.push_back(make_prim_field("IsSelected",  "boolean"));
+    iclient.operations.push_back(op);
+    mod.interfaces.push_back(iclient);
+
+    auto r = pipegen::emit_cpp_for_module(mod);
+
+    // Struct definition in types_hpp
+    CHECK(r.types_hpp.find("struct EventButton_Args {") != std::string::npos);
+    CHECK(r.types_hpp.find("::std::uint32_t ButtonIndex;") != std::string::npos);
+    CHECK(r.types_hpp.find("::std::string ButtonName;") != std::string::npos);
+    CHECK(r.types_hpp.find("bool IsSelected;") != std::string::npos);
+
+    // OP_DECLARE_TYPE with correct tag
+    CHECK(r.types_hpp.find("\"M_HidJoystick::EventButton_Args\"") != std::string::npos);
+}
+
+TEST_CASE("emit_cpp_for_module Factory schema uses valid JSON Schema types") {
+    pipegen::ast::Module mod;
+    mod.name = "M_Mount";
+    pipegen::ast::StructDecl s;
+    s.name = "ScaledRateType";
+    auto add = [&](std::string name,
+                   std::variant<pipegen::ast::PrimitiveType,
+                                pipegen::ast::NamedType,
+                                pipegen::ast::SequenceType> v) {
+        pipegen::ast::StructField f;
+        f.name = std::move(name);
+        f.type = std::make_shared<pipegen::ast::TypeRef>();
+        f.type->value = std::move(v);
+        s.fields.push_back(f);
+    };
+    add("AzimuthScaledRate",   pipegen::ast::PrimitiveType{"double", std::nullopt});
+    add("ElevationScaledRate", pipegen::ast::PrimitiveType{"double", std::nullopt});
+    mod.structs.push_back(s);
+
+    std::set<std::string> known = {"M_Mount"};
+    std::map<std::string, pipegen::ast::TypeRef> typedefs;
+
+    auto r = pipegen::emit_cpp_for_module(mod, known, typedefs);
+
+    // float/double fields must surface as JSON Schema "number", never the raw
+    // C++/IDL "double" — RJSF rejects "double" as an unknown field type.
+    CHECK(r.nodes_cpp.find("\"AzimuthScaledRate\":{\"type\":\"number\"")
+          != std::string::npos);
+    CHECK(r.nodes_cpp.find("\"type\":\"double\"") == std::string::npos);
+}
+
+TEST_CASE("emit_cpp_for_module emits synthetic struct def in real-sdk mode") {
+    // Build M_HidJoystick with IClient::EventButton(unsigned long, string, boolean)
+    // and a normal (non-synthetic) struct Foo — then emit with target_real_sdk=true.
+    //
+    // Expectations:
+    //  - The synthetic EventButton_Args struct definition IS emitted (it's ours, not
+    //    in any SDK header, so the real-sdk guard must NOT suppress it).
+    //  - to_json / from_json ARE emitted (they iterate mmod.structs unconditionally).
+    //  - The real struct Foo definition is NOT emitted (still correctly suppressed
+    //    under real-sdk, because it comes from the SDK type header).
+    pipegen::ast::Module mod;
+    mod.name = "M_HidJoystick";
+
+    // Add a normal (non-synthetic) struct — must stay suppressed in real-sdk mode.
+    {
+        pipegen::ast::StructDecl foo;
+        foo.name = "Foo";
+        foo.synthetic = false;
+        foo.source_order = 1;
+        pipegen::ast::StructField f;
+        f.name = "X";
+        f.type = std::make_shared<pipegen::ast::TypeRef>();
+        f.type->value = pipegen::ast::PrimitiveType{"double", std::nullopt};
+        foo.fields.push_back(f);
+        mod.structs.push_back(foo);
+    }
+
+    auto make_prim_param = [](std::string name, std::string prim) -> pipegen::ast::OpParam {
+        pipegen::ast::OpParam p;
+        p.name = std::move(name);
+        p.direction = "in";
+        p.type = std::make_shared<pipegen::ast::TypeRef>();
+        p.type->value = pipegen::ast::PrimitiveType{std::move(prim), std::nullopt};
+        return p;
+    };
+
+    pipegen::ast::InterfaceDecl iclient;
+    iclient.name = "IClient";
+    pipegen::ast::Operation op;
+    op.name = "EventButton";
+    op.params.push_back(make_prim_param("ButtonIndex", "unsigned long"));
+    op.params.push_back(make_prim_param("ButtonName",  "string"));
+    op.params.push_back(make_prim_param("IsSelected",  "boolean"));
+    iclient.operations.push_back(op);
+    mod.interfaces.push_back(iclient);
+
+    // Emit with target_real_sdk = true
+    auto r = pipegen::emit_cpp_for_module(mod, {}, {}, /*target_real_sdk=*/true);
+
+    // Synthetic struct definition MUST be present even in real-sdk mode.
+    CHECK(r.types_hpp.find("struct EventButton_Args {") != std::string::npos);
+    CHECK(r.types_hpp.find("::std::uint32_t ButtonIndex;") != std::string::npos);
+    CHECK(r.types_hpp.find("::std::string ButtonName;") != std::string::npos);
+    CHECK(r.types_hpp.find("bool IsSelected;") != std::string::npos);
+
+    // to_json / from_json for the synthetic struct (loops are already unconditional,
+    // but confirm the specific function signatures are present).
+    CHECK(r.types_hpp.find("to_json(EventButton_Args const& v)") != std::string::npos);
+    CHECK(r.types_hpp.find("from_json(::nlohmann::json const& j, EventButton_Args& v)") != std::string::npos);
+
+    // OP_DECLARE_TYPE still present (unconditional).
+    CHECK(r.types_hpp.find("\"M_HidJoystick::EventButton_Args\"") != std::string::npos);
+
+    // Contrast: real (non-synthetic) struct Foo definition must NOT be emitted.
+    CHECK(r.types_hpp.find("struct Foo {") == std::string::npos);
+}
+
+TEST_CASE("emit_cpp_for_module Args struct includes Optional and List params (matches port set)") {
+    // Regression test: before the fix, make_args_struct used empty context sets
+    // and so Optional/List params (resolved via typedef) were excluded from the
+    // _Args struct even though they get scalar input ports.
+    // After the fix, is_portable() is the single source of truth for both.
+    //
+    // Setup: M_Sensor::IClient::EventScan(double Rate, AngleOptType Angle)
+    //   where AngleOptType = sequence<double,1>  (Optional port)
+    //   and   IClient::EventBatch(double Rate, ValListType Vals)
+    //   where ValListType = sequence<double>      (List port)
+    //
+    // IClient ops on the Service node:
+    //   - Each port gets a scalar input on the Service node (is_portable = true).
+    //   - The _Args struct must contain exactly those params.
+    // We also add IService with a dummy op so both node classes are emitted.
+
+    // --- Build the typedef for AngleOptType (sequence<double,1>) ---
+    pipegen::ast::TypeRef dbl_ref;
+    dbl_ref.value = pipegen::ast::PrimitiveType{"double", std::nullopt};
+
+    pipegen::ast::TypeRef opt_alias;
+    {
+        auto elem = std::make_shared<pipegen::ast::TypeRef>(dbl_ref);
+        opt_alias.value = pipegen::ast::SequenceType{elem, /*max_size=*/1u};
+    }
+
+    // --- Build the typedef for ValListType (sequence<double>) ---
+    pipegen::ast::TypeRef list_alias;
+    {
+        auto elem = std::make_shared<pipegen::ast::TypeRef>(dbl_ref);
+        list_alias.value = pipegen::ast::SequenceType{elem, /*max_size=*/std::nullopt};
+    }
+
+    // Helper: make an OpParam with a NamedType reference
+    auto named_param = [](std::string pname, std::string mod_name, std::string type_name,
+                          std::string dir = "in") -> pipegen::ast::OpParam {
+        pipegen::ast::OpParam p;
+        p.name = std::move(pname);
+        p.direction = std::move(dir);
+        p.type = std::make_shared<pipegen::ast::TypeRef>();
+        p.type->value = pipegen::ast::NamedType{{std::move(mod_name), std::move(type_name)}};
+        return p;
+    };
+    auto prim_param = [](std::string pname, std::string prim) -> pipegen::ast::OpParam {
+        pipegen::ast::OpParam p;
+        p.name = std::move(pname);
+        p.direction = "in";
+        p.type = std::make_shared<pipegen::ast::TypeRef>();
+        p.type->value = pipegen::ast::PrimitiveType{std::move(prim), std::nullopt};
+        return p;
+    };
+
+    // Build the module
+    pipegen::ast::Module mod;
+    mod.name = "M_Sensor";
+
+    // Add AngleOptType and ValListType as local typedefs so they resolve
+    {
+        pipegen::ast::TypedefDecl td;
+        td.name = "AngleOptType";
+        td.source_order = 1;
+        td.aliased = std::make_shared<pipegen::ast::TypeRef>(opt_alias);
+        mod.typedefs.push_back(td);
+    }
+    {
+        pipegen::ast::TypedefDecl td;
+        td.name = "ValListType";
+        td.source_order = 2;
+        td.aliased = std::make_shared<pipegen::ast::TypeRef>(list_alias);
+        mod.typedefs.push_back(td);
+    }
+
+    // IClient with two multi-param ops (the SERVICE node registers INPUTs for these)
+    pipegen::ast::InterfaceDecl iclient;
+    iclient.name = "IClient";
+    // EventScan(double Rate, AngleOptType Angle)
+    {
+        pipegen::ast::Operation op;
+        op.name = "EventScan";
+        op.params.push_back(prim_param("Rate", "double"));
+        op.params.push_back(named_param("Angle", "M_Sensor", "AngleOptType"));
+        iclient.operations.push_back(op);
+    }
+    // EventBatch(double Rate, ValListType Vals)
+    {
+        pipegen::ast::Operation op;
+        op.name = "EventBatch";
+        op.params.push_back(prim_param("Rate", "double"));
+        op.params.push_back(named_param("Vals", "M_Sensor", "ValListType"));
+        iclient.operations.push_back(op);
+    }
+    mod.interfaces.push_back(iclient);
+
+    // IService with one dummy op so a Service node class is also emitted.
+    pipegen::ast::InterfaceDecl isvc;
+    isvc.name = "IService";
+    {
+        pipegen::ast::Operation op;
+        op.name = "Ping";
+        op.params.push_back(prim_param("Id", "long"));
+        isvc.operations.push_back(op);
+    }
+    mod.interfaces.push_back(isvc);
+
+    // all_typedefs so the resolver can see the local typedef aliases
+    std::map<std::string, pipegen::ast::TypeRef> all_typedefs = {
+        {"M_Sensor::AngleOptType", opt_alias},
+        {"M_Sensor::ValListType",  list_alias},
+    };
+    std::set<std::string> known = {"M_Sensor"};
+
+    auto r = pipegen::emit_cpp_for_module(mod, known, all_typedefs);
+
+    // EventScan_Args must contain BOTH Rate (scalar) AND Angle (Optional port).
+    // Before the fix, Angle was excluded (is_safe_type with empty context rejected
+    // the typedef); after the fix is_portable() resolves the chain correctly.
+    CHECK(r.types_hpp.find("struct EventScan_Args {") != std::string::npos);
+    // Rate: primitive double — emitted as "double Rate;"
+    CHECK(r.types_hpp.find("    double Rate;") != std::string::npos);
+    // Angle: NamedType{M_Sensor, AngleOptType} — cross-module reference emits as
+    // "::M_Sensor::AngleOptType" (M_Sensor is not a local submodule of M_Sensor)
+    CHECK(r.types_hpp.find("    ::M_Sensor::AngleOptType Angle;") != std::string::npos);
+
+    // EventBatch_Args must contain BOTH Rate AND Vals (List port).
+    CHECK(r.types_hpp.find("struct EventBatch_Args {") != std::string::npos);
+    // Vals: NamedType{M_Sensor, ValListType} — same cross-module rule
+    CHECK(r.types_hpp.find("    ::M_Sensor::ValListType Vals;") != std::string::npos);
+
+    // Both must have OP_DECLARE_TYPE entries
+    CHECK(r.types_hpp.find("\"M_Sensor::EventScan_Args\"")  != std::string::npos);
+    CHECK(r.types_hpp.find("\"M_Sensor::EventBatch_Args\"") != std::string::npos);
+
+    // The Service node registers INPUTS for multi-param IClient ops (it composes
+    // events to send to connected clients). Both Rate AND Angle must be registered.
+    CHECK(r.nodes_cpp.find("register_input(&in_EventScan_Rate)") != std::string::npos);
+    CHECK(r.nodes_cpp.find("register_input(&in_EventScan_Angle)") != std::string::npos);
+    CHECK(r.nodes_cpp.find("register_input(&in_EventBatch_Rate)") != std::string::npos);
+    CHECK(r.nodes_cpp.find("register_input(&in_EventBatch_Vals)") != std::string::npos);
+}
+
+TEST_CASE("emit_cpp_for_module emits atomic args port for multi-param IClient op (Service node)") {
+    // M_HidJoystick: IClient::EventButton(unsigned long ButtonIndex, string ButtonName, boolean IsSelected)
+    // This is a multi-param op with 3 portable params, so:
+    //   - The Service node (which sends IClient ops) should get an args port in addition to scalar ports.
+    //   - Member declaration: InputPort<::M_HidJoystick::EventButton_Args> in_EventButton_args{"EventButton.args"};
+    //   - Constructor: register_input(&in_EventButton_args);
+    //   - The existing scalar ports and trigger must still be present (supplement, not replace).
+    pipegen::ast::Module mod;
+    mod.name = "M_HidJoystick";
+
+    auto make_prim_param = [](std::string name, std::string prim) -> pipegen::ast::OpParam {
+        pipegen::ast::OpParam p;
+        p.name = std::move(name);
+        p.direction = "in";
+        p.type = std::make_shared<pipegen::ast::TypeRef>();
+        p.type->value = pipegen::ast::PrimitiveType{std::move(prim), std::nullopt};
+        return p;
+    };
+
+    // IClient has the multi-param EventButton op
+    pipegen::ast::InterfaceDecl iclient;
+    iclient.name = "IClient";
+    pipegen::ast::Operation op;
+    op.name = "EventButton";
+    op.params.push_back(make_prim_param("ButtonIndex", "unsigned long"));
+    op.params.push_back(make_prim_param("ButtonName",  "string"));
+    op.params.push_back(make_prim_param("IsSelected",  "boolean"));
+    iclient.operations.push_back(op);
+    mod.interfaces.push_back(iclient);
+
+    // IService with a dummy single-param op so both node classes are emitted
+    pipegen::ast::InterfaceDecl isvc;
+    isvc.name = "IService";
+    pipegen::ast::Operation ping;
+    ping.name = "Ping";
+    ping.params.push_back(make_prim_param("Id", "long"));
+    isvc.operations.push_back(ping);
+    mod.interfaces.push_back(isvc);
+
+    auto r = pipegen::emit_cpp_for_module(mod);
+
+    // --- Service node: registers args port for multi-param IClient op ---
+
+    // Member declaration: the args port alongside the scalar ports
+    CHECK(r.nodes_cpp.find(
+        "::flowboard::InputPort<::M_HidJoystick::EventButton_Args> in_EventButton_args{\"EventButton.args\"}")
+          != std::string::npos);
+
+    // Constructor: args port registered
+    CHECK(r.nodes_cpp.find("register_input(&in_EventButton_args)") != std::string::npos);
+
+    // Supplement check: existing scalar ports and trigger must still be present
+    CHECK(r.nodes_cpp.find("in_EventButton_ButtonIndex") != std::string::npos);
+    CHECK(r.nodes_cpp.find("in_EventButton_trigger")    != std::string::npos);
+
+    // --- Task 5: atomic args sink ---
+    // The args sink must be set on in_EventButton_args in on_start().
+    CHECK(r.nodes_cpp.find("in_EventButton_args.set_internal_sink(") != std::string::npos);
+    // The sink lambda receives a shared_ptr<const M_HidJoystick::EventButton_Args> (_v)
+    // and reads each field from it.
+    CHECK(r.nodes_cpp.find("_v->ButtonIndex") != std::string::npos);
+    CHECK(r.nodes_cpp.find("_v->ButtonName")  != std::string::npos);
+    CHECK(r.nodes_cpp.find("_v->IsSelected")  != std::string::npos);
+    // The sink must invoke handle_->EventButton(...) (the SDK op, atomically).
+    CHECK(r.nodes_cpp.find("->EventButton(")  != std::string::npos);
+}
+
+TEST_CASE("emit_cpp_for_module emits atomic args OUTPUT port for multi-param received op (Client node)") {
+    // M_HidJoystick: IClient::EventButton(unsigned long ButtonIndex, string ButtonName, boolean IsSelected)
+    // The CLIENT node implements IClient (receive side). For a multi-param op it should emit:
+    //   - A scalar OutputPort per portable param (existing, must remain)
+    //   - ONE extra atomic OutputPort<::M_HidJoystick::EventButton_Args> out_EventButton_args{"EventButton.args"}
+    //   - register_output(&out_EventButton_args) in the constructor
+    //   - In the override body: build an EventButton_Args struct and emit it on out_EventButton_args
+    pipegen::ast::Module mod;
+    mod.name = "M_HidJoystick";
+
+    auto make_prim_param = [](std::string name, std::string prim) -> pipegen::ast::OpParam {
+        pipegen::ast::OpParam p;
+        p.name = std::move(name);
+        p.direction = "in";
+        p.type = std::make_shared<pipegen::ast::TypeRef>();
+        p.type->value = pipegen::ast::PrimitiveType{std::move(prim), std::nullopt};
+        return p;
+    };
+
+    // IClient has the multi-param EventButton op
+    pipegen::ast::InterfaceDecl iclient;
+    iclient.name = "IClient";
+    pipegen::ast::Operation op;
+    op.name = "EventButton";
+    op.params.push_back(make_prim_param("ButtonIndex", "unsigned long"));
+    op.params.push_back(make_prim_param("ButtonName",  "string"));
+    op.params.push_back(make_prim_param("IsSelected",  "boolean"));
+    iclient.operations.push_back(op);
+    mod.interfaces.push_back(iclient);
+
+    // IService with a dummy single-param op so both node classes are emitted
+    pipegen::ast::InterfaceDecl isvc;
+    isvc.name = "IService";
+    pipegen::ast::Operation ping;
+    ping.name = "Ping";
+    ping.params.push_back(make_prim_param("Id", "long"));
+    isvc.operations.push_back(ping);
+    mod.interfaces.push_back(isvc);
+
+    auto r = pipegen::emit_cpp_for_module(mod);
+
+    // --- Client node: atomic struct OUTPUT for multi-param received IClient op ---
+
+    // 1. Member declaration must be present
+    CHECK(r.nodes_cpp.find(
+        "::flowboard::OutputPort<::M_HidJoystick::EventButton_Args> out_EventButton_args{\"EventButton.args\"}")
+          != std::string::npos);
+
+    // 2. Registration must be present
+    CHECK(r.nodes_cpp.find("register_output(&out_EventButton_args)") != std::string::npos);
+
+    // 3. Override body: struct is built and emitted
+    CHECK(r.nodes_cpp.find("out_EventButton_args.emit(") != std::string::npos);
+    CHECK(r.nodes_cpp.find("_args->ButtonIndex = ButtonIndex;") != std::string::npos);
+    CHECK(r.nodes_cpp.find("_args->ButtonName = ButtonName;")   != std::string::npos);
+    CHECK(r.nodes_cpp.find("_args->IsSelected = IsSelected;")   != std::string::npos);
+
+    // 4. Supplement: existing scalar outputs must still be present
+    CHECK(r.nodes_cpp.find("out_EventButton_ButtonIndex") != std::string::npos);
+    CHECK(r.nodes_cpp.find("out_EventButton_ButtonName")  != std::string::npos);
+    CHECK(r.nodes_cpp.find("out_EventButton_IsSelected")  != std::string::npos);
 }

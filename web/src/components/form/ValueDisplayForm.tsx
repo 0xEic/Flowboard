@@ -53,6 +53,9 @@ export function ValueDisplayForm({ nodeId }: { nodeId: string }) {
         <div className="text-slate-500 text-[11px] mt-1 leading-snug">
           Leave empty to show the whole value. Otherwise only these fields of a
           struct value are shown (e.g. <code>Azimuth</code>, <code>Position.X</code>).
+          Append <code>:hex</code> or <code>:bin</code> to show an integer field in
+          that base (e.g. <code>id:hex</code>); a bare <code>:hex</code>/<code>:bin</code>
+          formats the whole value or each list item.
         </div>
       </div>
       <button

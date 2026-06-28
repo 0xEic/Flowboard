@@ -5,6 +5,7 @@ import { useGraphStore } from '../../store/graph_store';
 import { colorForTypeTag } from '../../lib/typeColor';
 import { resolveTapKey } from '../../lib/group_compile';
 import { api } from '../../api/client';
+import { HelpIcon } from '../../help/HelpIcon';
 
 const dot = (tag: string) => ({
   width: 10, height: 10, borderRadius: 999,
@@ -37,8 +38,11 @@ function Frame(props: {
           updateSize(props.id, { width: Math.round(p.width), height: Math.round(p.height) })}
       />
       <div className="px-2 py-1 border-b border-slate-700 bg-slate-900 rounded-t shrink-0">
-        <div className="font-semibold">{props.id}</div>
-        <div className="text-slate-400 text-[10px]">{props.type}</div>
+        <div className="font-semibold flex items-center gap-1.5">
+          <span className="truncate">{props.id}</span>
+          <HelpIcon typeName={props.type} title={`Help for ${props.type}`} />
+        </div>
+        <div className="text-slate-400 text-[10px] truncate">{props.type}</div>
       </div>
       <div className="p-2 flex-1 min-h-0 flex flex-col">{props.children}</div>
     </div>
@@ -58,6 +62,40 @@ function fmt(v: unknown): string {
   if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(3);
   if (typeof v === 'string') return v;
   return JSON.stringify(v);
+}
+
+type Radix = 'dec' | 'hex' | 'bin';
+
+// Parse a field entry like "Position.X:hex" into its dot-path + display radix.
+// A bare ":hex"/":bin" (empty path) targets the whole value / each list item.
+function parseField(f: string): { path: string; radix: Radix } {
+  const m = /:(hex|bin)$/.exec(f);
+  if (m) return { path: f.slice(0, m.index), radix: m[1] as Radix };
+  return { path: f, radix: 'dec' };
+}
+
+// Format an integer-valued number (or bool) in the given radix; fall back to the
+// default fmt() for non-integers, strings, objects, and undefined.
+function fmtRadix(v: unknown, radix: Radix): string {
+  if (radix !== 'dec') {
+    const n = typeof v === 'boolean' ? (v ? 1 : 0) : v;
+    if (typeof n === 'number' && Number.isInteger(n)) {
+      const s = Math.abs(n).toString(radix === 'hex' ? 16 : 2);
+      const body = radix === 'hex' ? '0x' + s.toUpperCase() : '0b' + s;
+      return (n < 0 ? '-' : '') + body;
+    }
+  }
+  return fmt(v);
+}
+
+// Radix to apply to a whole value / list item: the first bare-notation field
+// (empty path) with a hex/bin radix, else decimal.
+function wholeRadix(fields: string[]): Radix {
+  for (const f of fields) {
+    const p = parseField(f);
+    if (p.path === '' && p.radix !== 'dec') return p.radix;
+  }
+  return 'dec';
 }
 
 // The live tap key feeding a display node's `in` input (the upstream output
@@ -172,12 +210,13 @@ export function ValueDisplayView({ id, type, selected }: { id: string; type: str
           <ListItems items={value.items} fields={fields} />
         ) : fields.length > 0 && value !== null && typeof value === 'object' ? (
           <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 font-mono">
-            {fields.map(f => (
-              <Fragmented key={f} label={f} val={resolvePath(value, f)} />
-            ))}
+            {fields.map(f => {
+              const { path, radix } = parseField(f);
+              return <Fragmented key={f} label={path} val={resolvePath(value, path)} radix={radix} />;
+            })}
           </div>
         ) : (
-          <div className="font-mono text-emerald-300 break-all">{fmt(value)}</div>
+          <div className="font-mono text-emerald-300 break-all">{fmtRadix(value, wholeRadix(fields))}</div>
         )}
       </div>
     </Frame>
@@ -197,19 +236,19 @@ function ListItems({ items, fields }: { items: unknown[]; fields: string[] }) {
         <div key={i} className="text-emerald-300 break-all border-b border-slate-700/40 py-0.5">
           <span className="text-slate-500 mr-1">{i}:</span>
           {fields.length > 0 && item !== null && typeof item === 'object'
-            ? fields.map(f => `${f}=${fmt(resolvePath(item, f))}`).join('  ')
-            : fmt(item)}
+            ? fields.map(f => { const { path, radix } = parseField(f); return `${path}=${fmtRadix(resolvePath(item, path), radix)}`; }).join('  ')
+            : fmtRadix(item, wholeRadix(fields))}
         </div>
       ))}
     </div>
   );
 }
 
-function Fragmented({ label, val }: { label: string; val: unknown }) {
+function Fragmented({ label, val, radix = 'dec' }: { label: string; val: unknown; radix?: Radix }) {
   return (
     <>
       <span className="text-slate-400">{label}</span>
-      <span className="text-emerald-300 text-right break-all">{fmt(val)}</span>
+      <span className="text-emerald-300 text-right break-all">{fmtRadix(val, radix)}</span>
     </>
   );
 }

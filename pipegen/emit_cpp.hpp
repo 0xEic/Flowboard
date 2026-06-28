@@ -30,6 +30,18 @@ EmitResult emit_cpp_for_module(
     std::map<std::string, ast::TypeRef> const& all_typedefs = {},
     bool target_real_sdk = false);
 
+// Append synthetic <Op>_Args structs to `mod` — one per multi-param composer op
+// (IService command / IClient event) that has at least one portable in-param.
+// Each struct's fields are exactly those portable in-params, in order, marked
+// StructDecl::synthetic. Shared by the C++ emitter (so the engine registers them
+// across every type-generic registry) and the TS emitter (so the web's generated
+// type lists / FIELD_DESCRIPTORS carry the same _Args structs). Idempotent within
+// a module via op-name de-dup. Returns divergence-warning text (empty normally).
+std::string synthesize_args_structs(
+    ast::Module& mod,
+    std::set<std::string> const& known_modules = {},
+    std::map<std::string, ast::TypeRef> const& all_typedefs = {});
+
 // Helper exposed for tests.
 // local_submods: optional set of submodule names for the current module
 // (used to prefix unqualified local submodule type references).

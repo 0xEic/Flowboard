@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { NodeResizer } from 'reactflow';
 import { useGraphStore } from '../../store/graph_store';
+import { HelpIcon } from '../../help/HelpIcon';
 
 // A canvas annotation: free text only, no ports, never reaches the engine
 // (stripped before send). The note is READ-ONLY on the canvas — editing text
@@ -33,6 +34,13 @@ export function NoteNodeView({ id, selected }: { id: string; type: string; selec
         {text
           ? text
           : <span className="text-amber-700/50 italic">Empty note — edit the text in the inspector</span>}
+      </div>
+      <div className="absolute top-1 right-1">
+        <HelpIcon
+          typeName="Note"
+          className="bg-amber-200/80 hover:bg-amber-300 text-amber-900"
+          title="Help for Note"
+        />
       </div>
     </div>
   );

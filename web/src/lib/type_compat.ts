@@ -53,8 +53,14 @@ export function extraCandidates(tag: string, wantInput: boolean): Candidate[] {
     if (isNumericTag(tag)) out.push({ typeName: 'Debug.GraphDisplay', portName: 'in' });
     out.push({ typeName: 'Transform.KeyValueAccumulator', portName: 'value' });
     if (isStructTag(tag)) out.push({ typeName: 'Transform.Extract', portName: 'in' });
+    // Convert bridges any primitive to a configurable primitive; offer it so a
+    // mismatched primitive output can be retyped. Its `in` adopts the dragged tag.
+    if (isPrimitiveTag(tag)) out.push({ typeName: 'Transform.Convert', portName: 'in' });
   } else {
     if (isPrimitiveTag(tag)) out.push({ typeName: 'Transform.ConstantSource', portName: 'out' });
+    // Convert can produce any primitive; offer it as a source whose `out` adopts
+    // the dragged tag (its `in` keeps the default for the user to set).
+    if (isPrimitiveTag(tag)) out.push({ typeName: 'Transform.Convert', portName: 'out' });
   }
   return out;
 }
@@ -76,6 +82,7 @@ export function candidateConfig(typeName: string, portName: string, tag: string)
   if (typeName === 'Debug.ValueDisplay')         return { inputType: tag };
   if (typeName === 'Debug.GraphDisplay')         return { inputType: tag };
   if (typeName === 'Transform.ConstantSource')   return { outputType: tag, value: constantDefaultValue(tag) };
+  if (typeName === 'Transform.Convert')          return portName === 'out' ? { outputType: tag } : { inputType: tag };
   if (typeName === 'Transform.KeyValueAccumulator')
     return portName === 'key' ? { keyType: tag } : { valueType: tag };
   return undefined;

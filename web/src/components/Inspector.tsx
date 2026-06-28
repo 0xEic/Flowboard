@@ -94,14 +94,14 @@ function GraphInspector() {
 
   if (!graph) {
     return (
-      <aside className="w-96 bg-slate-800 border-l border-slate-700 p-3 text-sm">
+      <aside data-tour="inspector" className="w-96 bg-slate-800 border-l border-slate-700 p-3 text-sm">
         No graph loaded.
       </aside>
     );
   }
 
   return (
-    <aside className="w-96 bg-slate-800 border-l border-slate-700 p-3 text-sm flex flex-col gap-2">
+    <aside data-tour="inspector" className="w-96 bg-slate-800 border-l border-slate-700 p-3 text-sm flex flex-col gap-2">
       <div className="font-semibold">Inspector</div>
       <div className="text-xs text-slate-400">
         Select a node on the canvas to edit its properties.
@@ -155,7 +155,7 @@ function MultiSelectionPanel({ ids }: { ids: string[] }) {
   const nodes  = (graph?.nodes ?? []).filter(n => ids.includes(n.id));
 
   return (
-    <aside className="w-96 bg-slate-800 border-l border-slate-700 p-3 text-sm flex flex-col gap-2 overflow-y-auto">
+    <aside data-tour="inspector" className="w-96 bg-slate-800 border-l border-slate-700 p-3 text-sm flex flex-col gap-2 overflow-y-auto">
       <div className="font-semibold">{ids.length} nodes selected</div>
       <div className="text-xs text-slate-500">
         Click a node to edit it; Ctrl/⌘ or Shift-click removes it from the selection.
@@ -233,7 +233,7 @@ function EdgePanel({ edge }: { edge: { from: string; to: string } }) {
   );
 
   return (
-    <aside className="w-96 bg-slate-800 border-l border-slate-700 p-3 text-sm flex flex-col gap-2 overflow-y-auto">
+    <aside data-tour="inspector" className="w-96 bg-slate-800 border-l border-slate-700 p-3 text-sm flex flex-col gap-2 overflow-y-auto">
       <div className="font-semibold">Link</div>
       <div className="flex flex-col gap-2">
         {endpointRow('Output (source)', src.id, src.port, srcType, 'text-emerald-400')}

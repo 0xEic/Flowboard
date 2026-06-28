@@ -21,9 +21,13 @@ import { CompareForm } from './CompareForm';
 import { FilterForm } from './FilterForm';
 import { ThresholdForm } from './ThresholdForm';
 import { ThrottleForm } from './ThrottleForm';
+import { DelayForm } from './DelayForm';
 import { SyncForm } from './SyncForm';
 import { NoteForm } from './NoteForm';
+import { PythonScriptForm } from './PythonScriptForm';
+import { BytePackForm } from './BytePackForm';
 import { nodePorts } from '../../lib/node_ports';
+import { HelpIcon } from '../../help/HelpIcon';
 
 type Props = { nodeId: string };
 
@@ -66,7 +70,7 @@ export function NodeForm({ nodeId }: Props) {
 
   if (!node) {
     return (
-      <aside className="w-96 bg-slate-800 border-l border-slate-700 p-3 text-sm">
+      <aside data-tour="inspector" className="w-96 bg-slate-800 border-l border-slate-700 p-3 text-sm">
         Node not found.
       </aside>
     );
@@ -79,8 +83,11 @@ export function NodeForm({ nodeId }: Props) {
   const livePorts = nodePorts({ type: node.type, config: node.config }, catalog);
 
   return (
-    <aside className="w-96 bg-slate-800 border-l border-slate-700 p-3 text-sm flex flex-col overflow-y-auto">
-      <div className="font-semibold mb-1">{node.id}</div>
+    <aside data-tour="inspector" className="w-96 bg-slate-800 border-l border-slate-700 p-3 text-sm flex flex-col overflow-y-auto">
+      <div className="font-semibold mb-1 flex items-center gap-2">
+        <span className="truncate">{node.id}</span>
+        <HelpIcon typeName={node.type} title={`Help for ${node.type}`} />
+      </div>
       <div className="text-xs text-slate-400 mb-3">{node.type}</div>
 
       {/* Identity */}
@@ -186,10 +193,16 @@ export function NodeForm({ nodeId }: Props) {
         <ThresholdForm nodeId={nodeId} />
       ) : node.type === 'Transform.Throttle' ? (
         <ThrottleForm nodeId={nodeId} />
+      ) : node.type === 'Transform.Delay' ? (
+        <DelayForm nodeId={nodeId} />
       ) : node.type === 'Transform.Synchronize' ? (
         <SyncForm nodeId={nodeId} />
       ) : node.type === 'Transform.ConstantSource' ? (
         <ConstantSourceForm nodeId={nodeId} />
+      ) : node.type === 'Bytes.Pack' || node.type === 'Bytes.Unpack' ? (
+        <BytePackForm nodeId={nodeId} />
+      ) : node.type === 'Python.Script' ? (
+        <PythonScriptForm nodeId={nodeId} />
       ) : (
         <Form
           // Re-key when a type field changes so RJSF remounts with the new

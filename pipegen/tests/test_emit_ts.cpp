@@ -51,3 +51,42 @@ TEST_CASE("emit_ts_barrel re-exports per-module field descriptors") {
     CHECK(out.find("...FIELD_DESCRIPTORS_M_Common,") != std::string::npos);
     CHECK(out.find("...FIELD_DESCRIPTORS_M_Mount,") != std::string::npos);
 }
+
+TEST_CASE("emit_ts_module synthesizes <Op>_Args struct for multi-param IClient op") {
+    // Mirror of the C++ synthesis test: a multi-param IClient op must yield an
+    // EventButton_Args struct in the TS type list AND its FIELD_DESCRIPTORS, so
+    // the web's Extract / list / type-compat features can see _Args structs the
+    // same way they see regular onboard structs.
+    pipegen::ast::Module mod;
+    mod.name = "M_HidJoystick";
+
+    auto make_prim_param = [](std::string name, std::string prim_name) -> pipegen::ast::OpParam {
+        pipegen::ast::OpParam p;
+        p.name = std::move(name);
+        p.direction = "in";
+        p.type = std::make_shared<pipegen::ast::TypeRef>();
+        p.type->value = pipegen::ast::PrimitiveType{std::move(prim_name), std::nullopt};
+        return p;
+    };
+
+    pipegen::ast::InterfaceDecl iclient;
+    iclient.name = "IClient";
+    pipegen::ast::Operation op;
+    op.name = "EventButton";
+    op.params.push_back(make_prim_param("ButtonIndex", "unsigned long"));
+    op.params.push_back(make_prim_param("ButtonName",  "string"));
+    op.params.push_back(make_prim_param("IsSelected",  "boolean"));
+    iclient.operations.push_back(op);
+    mod.interfaces.push_back(iclient);
+
+    std::set<std::string> known = {"M_HidJoystick"};
+    std::map<std::string, pipegen::ast::TypeRef> typedefs;
+    auto out = pipegen::emit_ts_module(mod, known, typedefs);
+
+    // The synthetic struct appears in the module type list...
+    CHECK(out.find("\"EventButton_Args\"") != std::string::npos);
+    CHECK(out.find("\"M_HidJoystick::EventButton_Args\"") != std::string::npos);
+    // ...and in FIELD_DESCRIPTORS so the web can enumerate its fields.
+    CHECK(out.find("'M_HidJoystick::EventButton_Args'") != std::string::npos);
+    CHECK(out.find("name: 'ButtonIndex'") != std::string::npos);
+}

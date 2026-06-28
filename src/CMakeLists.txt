@@ -18,15 +18,21 @@ add_library(flowboard_engine STATIC
     engine/key_value_accumulator_registry.cpp
     engine/wire_registry.cpp
     engine/list_build_registry.cpp
+    engine/plugin_host.cpp
+    engine/port_factory_registry.cpp
+    engine/subprocess.cpp
     engine/onboardapi_discovery.cpp
     engine/manipulate_ops.cpp
+    engine/byte_codec.cpp
     nodes/threshold.cpp
     nodes/compare.cpp
     nodes/convert.cpp
     nodes/derivative.cpp
     nodes/filter.cpp
     nodes/inverter.cpp
+    nodes/pulse.cpp
     nodes/throttle.cpp
+    nodes/delay.cpp
     nodes/constant_source.cpp
     nodes/log_node.cpp
     nodes/extract.cpp
@@ -52,7 +58,21 @@ add_library(flowboard_engine STATIC
     nodes/arithmetic.cpp
     nodes/number_holder.cpp
     nodes/list_create.cpp
+    nodes/python_script.cpp
+    nodes/byte_pack.cpp
+    nodes/byte_unpack.cpp
+    nodes/can_encode.cpp
+    nodes/can_decode.cpp
     config/loader.cpp
+    transport/can_adapter_registry.cpp
+    transport/can_virtual.cpp
+    transport/can_socketcan.cpp
+    transport/serial_posix.cpp
+    transport/serial_win.cpp
+    nodes/can_filter.cpp
+    nodes/can_bus.cpp
+    nodes/serial_port.cpp
+    nodes/framer.cpp
 )
 target_include_directories(flowboard_engine
     PUBLIC  ${CMAKE_SOURCE_DIR}/include
@@ -69,8 +89,28 @@ target_link_libraries(flowboard_engine PUBLIC
     nlohmann_json::nlohmann_json
     rigtorp_spsc
     onboardapi::onboardapi
+    ${CMAKE_DL_LIBS}   # dlopen/dlsym for the plugin host (POSIX); empty on Windows
 )
 target_compile_features(flowboard_engine PUBLIC cxx_std_20)
+
+# ---------------------------------------------------------------------------
+# Plugin SDK — the minimal flowboard runtime a node plugin links against.
+# Deliberately free of the OnboardAPI dependency so third-party plugins build
+# with only the public headers + header-only deps (see docs/PLUGINS.md).
+# ---------------------------------------------------------------------------
+add_library(flowboard_plugin_sdk STATIC
+    log_setup.cpp
+    engine/port.cpp
+    engine/node.cpp
+    engine/registry.cpp
+)
+target_include_directories(flowboard_plugin_sdk PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(flowboard_plugin_sdk PUBLIC
+    spdlog::spdlog
+    nlohmann_json::nlohmann_json
+)
+target_compile_features(flowboard_plugin_sdk PUBLIC cxx_std_20)
+set_target_properties(flowboard_plugin_sdk PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 configure_file(
     ${CMAKE_SOURCE_DIR}/schemas/graph.schema.json

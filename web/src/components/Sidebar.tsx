@@ -22,7 +22,7 @@ export function Sidebar() {
   );
 
   return (
-    <div className="flex flex-col w-64 bg-slate-800 border-r border-slate-700 min-h-0">
+    <div data-tour="sidebar" className="flex flex-col w-64 bg-slate-800 border-r border-slate-700 min-h-0">
       <div className="flex border-b border-slate-700 shrink-0">
         {tabBtn('palette', 'Palette')}
         {tabBtn('discover', 'Discover')}

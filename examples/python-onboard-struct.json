@@ -1,0 +1,393 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "python-onboard-struct",
+    "description": "A Python.Script node whose input AND output ports are an OnboardAPI struct datatype (M_Mount::ScaledRateType). Two Iterator ramps feed a Factory.M_Mount::ScaledRateType that assembles the struct; Python receives it as a dict, applies a gain + clamp to both fields, and emits a struct back; the result is logged whole, shown field-by-field, and one field is extracted to a plot. Requires python on PATH; the M_Mount struct types are compiled into the binary.",
+    "authoring": {
+      "version": "1.0",
+      "metadata": {
+        "name": "python-onboard-struct",
+        "description": "A Python.Script node whose input AND output ports are an OnboardAPI struct datatype (M_Mount::ScaledRateType). Two Iterator ramps feed a Factory.M_Mount::ScaledRateType that assembles the struct; Python receives it as a dict, applies a gain + clamp to both fields, and emits a struct back; the result is logged whole, shown field-by-field, and one field is extracted to a plot. Requires python on PATH; the M_Mount struct types are compiled into the binary."
+      },
+      "nodes": [
+        {
+          "id": "iter-az",
+          "type": "Sources.Iterator",
+          "position": {
+            "x": 31.74071931427693,
+            "y": -321.77860496696337
+          },
+          "config": {
+            "autoReverse": true,
+            "autostart": true,
+            "endValue": 50,
+            "loop": true,
+            "specialEndEndValue": "linear",
+            "specialEndStartValue": "linear",
+            "specialStartEndValue": "linear",
+            "specialStartStartValue": "linear",
+            "startValue": 0,
+            "stepSize": 2,
+            "timeBetweenStepsMs": 150,
+            "valueType": "flowboard::Double"
+          }
+        },
+        {
+          "id": "iter-el",
+          "type": "Sources.Iterator",
+          "position": {
+            "x": 28.47580317754489,
+            "y": 347.8603928222088
+          },
+          "config": {
+            "autoReverse": true,
+            "autostart": true,
+            "endValue": -30,
+            "loop": true,
+            "specialEndEndValue": "linear",
+            "specialEndStartValue": "linear",
+            "specialStartEndValue": "linear",
+            "specialStartStartValue": "linear",
+            "startValue": 0,
+            "stepSize": 2,
+            "timeBetweenStepsMs": 200,
+            "valueType": "flowboard::Double"
+          }
+        },
+        {
+          "id": "factory",
+          "type": "Factory.M_Mount::ScaledRateType",
+          "position": {
+            "x": 460,
+            "y": 240
+          },
+          "config": {
+            "AzimuthScaledRate": 0,
+            "ElevationScaledRate": 0,
+            "autoTriggerOnNewInput": true
+          }
+        },
+        {
+          "id": "py",
+          "type": "Python.Script",
+          "position": {
+            "x": 828.3429215265166,
+            "y": 241.6962428605795
+          },
+          "config": {
+            "inputs": [
+              {
+                "name": "rate_in",
+                "type": "M_Mount::ScaledRateType"
+              }
+            ],
+            "outputs": [
+              {
+                "name": "rate_out",
+                "type": "M_Mount::ScaledRateType"
+              }
+            ],
+            "pythonExe": "",
+            "script": "GAIN = 1.5\nLIMIT = 60.0\n\ndef _clamp(x):\n    if x >  LIMIT: return  LIMIT\n    if x < -LIMIT: return -LIMIT\n    return x\n\ndef on_input(port, value):\n    if port == 'rate_in':\n        # value is the struct as a dict of plain numbers\n        az = value.get('AzimuthScaledRate', 0.0)\n        el = value.get('ElevationScaledRate', 0.0)\n        emit('rate_out', {\n            'AzimuthScaledRate':   _clamp(az * GAIN),\n            'ElevationScaledRate': _clamp(el * GAIN),\n        })\n"
+          }
+        },
+        {
+          "id": "log-struct",
+          "type": "Sinks.Log",
+          "position": {
+            "x": 1211.5971144712946,
+            "y": 138.30375713942047
+          },
+          "config": {
+            "inputType": "M_Mount::ScaledRateType",
+            "prefix": "scaled-rate"
+          }
+        },
+        {
+          "id": "display-struct",
+          "type": "Debug.ValueDisplay",
+          "position": {
+            "x": 1222.6226930650616,
+            "y": 277.4556357091307
+          },
+          "width": 260,
+          "height": 130,
+          "config": {
+            "inputType": "M_Mount::ScaledRateType",
+            "fields": [
+              "AzimuthScaledRate",
+              "ElevationScaledRate"
+            ]
+          }
+        },
+        {
+          "id": "extract-az",
+          "type": "Transform.Extract",
+          "position": {
+            "x": 1226.8633002165107,
+            "y": 459.15187856971033
+          },
+          "config": {
+            "field": "AzimuthScaledRate",
+            "inputType": "M_Mount::ScaledRateType"
+          }
+        },
+        {
+          "id": "plot-az",
+          "type": "Debug.GraphDisplay",
+          "position": {
+            "x": 1565.7385932334587,
+            "y": 451.5187856971023
+          },
+          "config": {
+            "inputType": "flowboard::Double",
+            "timeWindowSec": 30,
+            "autoScale": true,
+            "yMin": 0,
+            "yMax": 1
+          }
+        },
+        {
+          "id": "note-python",
+          "type": "Note",
+          "position": {
+            "x": 794.7715015361914,
+            "y": 434.67499290620356
+          },
+          "width": 320,
+          "height": 150,
+          "config": {
+            "text": "Python.Script with STRUCT I/O. The input port 'rate_in' and output port 'rate_out' are typed M_Mount::ScaledRateType. on_input(port, value) receives the struct as a Python dict of plain numbers; call emit('rate_out', {...}) with the same field keys to send a struct back out. Built-in scalars (Double/Int64/...) or any OnboardAPI struct tag work as port types."
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "iter-az.value",
+          "to": "factory.AzimuthScaledRate",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "iter-el.value",
+          "to": "factory.ElevationScaledRate",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "factory.out",
+          "to": "py.rate_in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "py.rate_out",
+          "to": "log-struct.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "py.rate_out",
+          "to": "display-struct.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "py.rate_out",
+          "to": "extract-az.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "extract-az.out",
+          "to": "plot-az.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        }
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "id": "iter-az",
+      "type": "Sources.Iterator",
+      "position": {
+        "x": 31.74071931427693,
+        "y": -321.77860496696337
+      },
+      "config": {
+        "autoReverse": true,
+        "autostart": true,
+        "endValue": 50,
+        "loop": true,
+        "specialEndEndValue": "linear",
+        "specialEndStartValue": "linear",
+        "specialStartEndValue": "linear",
+        "specialStartStartValue": "linear",
+        "startValue": 0,
+        "stepSize": 2,
+        "timeBetweenStepsMs": 150,
+        "valueType": "flowboard::Double"
+      }
+    },
+    {
+      "id": "iter-el",
+      "type": "Sources.Iterator",
+      "position": {
+        "x": 28.47580317754489,
+        "y": 347.8603928222088
+      },
+      "config": {
+        "autoReverse": true,
+        "autostart": true,
+        "endValue": -30,
+        "loop": true,
+        "specialEndEndValue": "linear",
+        "specialEndStartValue": "linear",
+        "specialStartEndValue": "linear",
+        "specialStartStartValue": "linear",
+        "startValue": 0,
+        "stepSize": 2,
+        "timeBetweenStepsMs": 200,
+        "valueType": "flowboard::Double"
+      }
+    },
+    {
+      "id": "factory",
+      "type": "Factory.M_Mount::ScaledRateType",
+      "position": {
+        "x": 460,
+        "y": 240
+      },
+      "config": {
+        "AzimuthScaledRate": 0,
+        "ElevationScaledRate": 0,
+        "autoTriggerOnNewInput": true
+      }
+    },
+    {
+      "id": "py",
+      "type": "Python.Script",
+      "position": {
+        "x": 828.3429215265166,
+        "y": 241.6962428605795
+      },
+      "config": {
+        "inputs": [
+          {
+            "name": "rate_in",
+            "type": "M_Mount::ScaledRateType"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "rate_out",
+            "type": "M_Mount::ScaledRateType"
+          }
+        ],
+        "pythonExe": "",
+        "script": "GAIN = 1.5\nLIMIT = 60.0\n\ndef _clamp(x):\n    if x >  LIMIT: return  LIMIT\n    if x < -LIMIT: return -LIMIT\n    return x\n\ndef on_input(port, value):\n    if port == 'rate_in':\n        # value is the struct as a dict of plain numbers\n        az = value.get('AzimuthScaledRate', 0.0)\n        el = value.get('ElevationScaledRate', 0.0)\n        emit('rate_out', {\n            'AzimuthScaledRate':   _clamp(az * GAIN),\n            'ElevationScaledRate': _clamp(el * GAIN),\n        })\n"
+      }
+    },
+    {
+      "id": "log-struct",
+      "type": "Sinks.Log",
+      "position": {
+        "x": 1211.5971144712946,
+        "y": 138.30375713942047
+      },
+      "config": {
+        "inputType": "M_Mount::ScaledRateType",
+        "prefix": "scaled-rate"
+      }
+    },
+    {
+      "id": "display-struct",
+      "type": "Debug.ValueDisplay",
+      "position": {
+        "x": 1222.6226930650616,
+        "y": 277.4556357091307
+      },
+      "width": 260,
+      "height": 130,
+      "config": {
+        "inputType": "M_Mount::ScaledRateType",
+        "fields": [
+          "AzimuthScaledRate",
+          "ElevationScaledRate"
+        ]
+      }
+    },
+    {
+      "id": "extract-az",
+      "type": "Transform.Extract",
+      "position": {
+        "x": 1226.8633002165107,
+        "y": 459.15187856971033
+      },
+      "config": {
+        "field": "AzimuthScaledRate",
+        "inputType": "M_Mount::ScaledRateType"
+      }
+    },
+    {
+      "id": "plot-az",
+      "type": "Debug.GraphDisplay",
+      "position": {
+        "x": 1565.7385932334587,
+        "y": 451.5187856971023
+      },
+      "config": {
+        "inputType": "flowboard::Double",
+        "timeWindowSec": 30,
+        "autoScale": true,
+        "yMin": 0,
+        "yMax": 1
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "iter-az.value",
+      "to": "factory.AzimuthScaledRate",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "iter-el.value",
+      "to": "factory.ElevationScaledRate",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "factory.out",
+      "to": "py.rate_in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "py.rate_out",
+      "to": "log-struct.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "py.rate_out",
+      "to": "display-struct.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "py.rate_out",
+      "to": "extract-az.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "extract-az.out",
+      "to": "plot-az.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    }
+  ]
+}

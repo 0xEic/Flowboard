@@ -59,10 +59,12 @@ function buildRfNodes(graph: GraphJson | null, selectedIds: string[]): RfNode[] 
       position: n.position ?? { x: 80 + i * 260, y: 120 },
       selected: sel.has(n.id),
     };
-    // Resizable Debug.* nodes carry an explicit size (persisted, else default)
-    // so the node box fills to it and the NodeResizer has something to grab.
+    // Any node may carry an explicit size: a persisted width/height wins; the
+    // Debug.* / Note types fall back to a default so they have a box to grab.
+    // Other node types stay auto-sized until the user drags the resize handles.
     const def = RESIZABLE_DEFAULT_SIZE[n.type];
-    if (def) node.style = { width: n.width ?? def.width, height: n.height ?? def.height };
+    if (n.width != null && n.height != null) node.style = { width: n.width, height: n.height };
+    else if (def) node.style = { width: def.width, height: def.height };
     return node;
   });
 }
@@ -576,7 +578,7 @@ function GraphCanvasInner() {
   }, [removeEdgeAction, selectEdge]);
 
   return (
-    <div className="flex-1 bg-slate-900 relative" onDragOver={onDragOver} onDrop={onDrop}>
+    <div data-tour="canvas" className="flex-1 bg-slate-900 relative" onDragOver={onDragOver} onDrop={onDrop}>
       <ReactFlow
         nodes={rfNodes}
         edges={edges}

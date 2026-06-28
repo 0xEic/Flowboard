@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { useMemo, useState } from 'react';
 import { useGraphStore } from '../store/graph_store';
+import { HelpIcon } from '../help/HelpIcon';
 import type { CatalogEntry } from '../api/types';
 
 // ---------------------------------------------------------------------------
@@ -23,7 +24,8 @@ const PALETTE_LAYOUT: ReadonlyArray<{ category: string; types: readonly string[]
   ] },
   { category: 'Transform', types: [
     'Transform.Convert', 'Transform.Extract', 'Transform.Inverter',
-    'Transform.Derivative', 'Transform.Arithmetic', 'Transform.NumberHolder',
+    'Transform.Pulse', 'Transform.Derivative', 'Transform.Arithmetic',
+    'Transform.NumberHolder',
     'Manipulate.Number', 'Manipulate.String',
   ] },
   { category: 'Logic & Conditions', types: [
@@ -35,8 +37,9 @@ const PALETTE_LAYOUT: ReadonlyArray<{ category: string; types: readonly string[]
     'Transform.List.GetAt', 'Transform.List.MapField', 'Transform.List.Size',
     'Transform.List.Sort',
   ] },
+  { category: 'Bytes', types: ['Bytes.Pack', 'Bytes.Unpack'] },
   { category: 'Timing & Sync', types: [
-    'Transform.Throttle', 'Transform.Synchronize', 'Transform.KeyValueAccumulator',
+    'Transform.Delay', 'Transform.Throttle', 'Transform.Synchronize', 'Transform.KeyValueAccumulator',
   ] },
   { category: 'Sinks', types: ['Sinks.Log'] },
   { category: 'Input', types: ['Input.ButtonHandler'] },
@@ -218,7 +221,7 @@ export function NodePalette() {
           {items.map(c => (
             <div
               key={c.typeName}
-              className="px-2 py-1 rounded hover:bg-slate-700 text-xs cursor-grab active:cursor-grabbing select-none"
+              className="px-2 py-1 rounded hover:bg-slate-700 text-xs cursor-grab active:cursor-grabbing select-none flex items-center gap-1"
               title={`${c.typeName}\n${c.inputs.length} in · ${c.outputs.length} out`}
               draggable
               onDragStart={e => {
@@ -231,7 +234,8 @@ export function NodePalette() {
                 e.dataTransfer.effectAllowed = 'copy';
               }}
             >
-              {entryLabel(c, group)}
+              <span className="flex-1 truncate">{entryLabel(c, group)}</span>
+              <HelpIcon typeName={c.typeName} title={`Help for ${c.typeName}`} />
             </div>
           ))}
         </div>

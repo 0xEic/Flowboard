@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(flowboard
-    VERSION 1.0.0
+    VERSION 1.1.0
     DESCRIPTION "Configurable pipe-and-filter workflow engine for OnboardAPI"
     LANGUAGES CXX)
 
@@ -40,6 +40,9 @@ option(FLOWBOARD_BUILD_WEB
 option(FLOWBOARD_BUILD_DOCS
     "Add a 'docs' target that generates Doxygen API + architecture documentation"
     OFF)
+option(FLOWBOARD_BUILD_EXAMPLE_PLUGIN
+    "Build the bundled example node plugin (examples/plugins/hello_plugin)"
+    ON)
 
 # OnboardAPI data model (.rmodel IDL files) — sourced from the upstream
 # Rheinmetall/onboardapi submodule pinned at external/onboardapi (tag v9.9.0).
@@ -69,6 +72,11 @@ endif()
 include(cmake/VersionInfo.cmake)
 
 add_subdirectory(src)
+
+if(FLOWBOARD_BUILD_EXAMPLE_PLUGIN)
+    add_subdirectory(examples/plugins/hello_plugin)
+    add_subdirectory(examples/plugins/fake_can_vendor)
+endif()
 
 if(FLOWBOARD_BUILD_TESTS)
     enable_testing()

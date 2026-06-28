@@ -362,6 +362,113 @@ ClassifiedField classify_field(
 
 }  // namespace
 
+std::string synthesize_args_structs(
+    ast::Module& mod,
+    std::set<std::string> const& known_modules,
+    std::map<std::string, ast::TypeRef> const& all_typedefs)
+{
+    // Same fallback as emit_cpp_for_module so standalone callers (unit tests,
+    // the TS emitter) classify cross-module types identically.
+    std::set<std::string> const& km =
+        known_modules.empty() ? kFallbackKnownModules : known_modules;
+    auto local_submods  = submodule_names(mod);
+    auto local_typedefs = typedef_names(mod);
+
+    // Portability predicates — kept identical to the ones in emit_cpp_for_module's
+    // port-emission loops so the synthesized struct's fields always match exactly
+    // the scalar ports generated for the op.
+    auto owning_module_of = [&](ast::TypeRef const& ref) -> std::string {
+        if (auto* nt = std::get_if<ast::NamedType>(&ref.value))
+            if (nt->qualified_name.size() == 2 && km.count(nt->qualified_name[0]))
+                return nt->qualified_name[0];
+        return mod.name;
+    };
+    auto opt_elem = [&](ast::TypeRef const& ref) -> std::optional<ast::TypeRef> {
+        std::string owning = owning_module_of(ref);
+        auto resolved = resolve_typedef(ref, all_typedefs, owning);
+        if (auto* s = std::get_if<ast::SequenceType>(&resolved.value)) {
+            if (s->max_size && *s->max_size == 1) {
+                ast::TypeRef elem = resolve_typedef(*s->element, all_typedefs, owning);
+                if (is_safe_type(elem, local_submods, local_typedefs, all_typedefs, owning, km))
+                    return elem;
+            }
+        }
+        return std::nullopt;
+    };
+    auto list_elem = [&](ast::TypeRef const& ref) -> std::optional<ast::TypeRef> {
+        std::string owning = owning_module_of(ref);
+        auto resolved = resolve_typedef(ref, all_typedefs, owning);
+        if (auto* s = std::get_if<ast::SequenceType>(&resolved.value)) {
+            if (!(s->max_size && *s->max_size == 1)) {
+                ast::TypeRef elem = resolve_typedef(*s->element, all_typedefs, owning);
+                if (is_safe_type(elem, local_submods, local_typedefs, all_typedefs, owning, km))
+                    return elem;
+            }
+        }
+        return std::nullopt;
+    };
+    auto is_portable = [&](ast::TypeRef const& ref) {
+        return is_safe_type(ref, local_submods, local_typedefs, all_typedefs, mod.name, km)
+            || opt_elem(ref).has_value()
+            || list_elem(ref).has_value();
+    };
+
+    std::string synth_warnings;
+    std::size_t synth_order = 1'000'000;  // emit after all real typedefs/structs
+    std::set<std::string> seen_args;
+    // Maps _Args name -> ordered portable in-param names, to detect signature
+    // divergence when the same op name appears on both IService and IClient.
+    std::map<std::string, std::vector<std::string>> seen_fields;
+    auto add_args_structs = [&](ast::InterfaceDecl const* iface) {
+        if (!iface) return;
+        for (auto const& op : iface->operations) {
+            if (op.params.size() <= 1) continue;
+            std::string args_name = op.name + "_Args";
+
+            std::vector<std::string> fields;
+            for (auto const& p : op.params) {
+                if (p.direction != "in") continue;
+                if (!is_portable(*p.type)) continue;
+                fields.push_back(p.name);
+            }
+
+            if (!seen_args.insert(args_name).second) {
+                if (fields != seen_fields.at(args_name)) {
+                    synth_warnings += "// WARNING: " + args_name
+                        + " name reused with differing parameters"
+                        + " -- second definition skipped\n";
+                }
+                continue;  // identical signature: correct de-dup
+            }
+            seen_fields[args_name] = fields;
+
+            ast::StructDecl s;
+            s.name = args_name;
+            s.synthetic = true;
+            s.source_order = synth_order++;
+            for (auto const& p : op.params) {
+                if (p.direction != "in") continue;
+                if (!is_portable(*p.type)) continue;
+                ast::StructField f;
+                f.type = p.type;
+                f.name = p.name;
+                s.fields.push_back(f);
+            }
+            if (!s.fields.empty())
+                mod.structs.push_back(std::move(s));
+        }
+    };
+    ast::InterfaceDecl const* early_client = nullptr;
+    ast::InterfaceDecl const* early_svc    = nullptr;
+    for (auto const& i : mod.interfaces) {
+        if (i.name == "IClient")  early_client = &i;
+        if (i.name == "IService") early_svc    = &i;
+    }
+    add_args_structs(early_svc);
+    add_args_structs(early_client);
+    return synth_warnings;
+}
+
 EmitResult emit_cpp_for_module(ast::Module const& mod,
                                std::set<std::string> const& known_modules,
                                std::map<std::string, ast::TypeRef> const& all_typedefs,
@@ -369,6 +476,10 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
     // When called from tests without a known-modules set, fall back to the
     // hard-coded Phase-2 module list so existing tests remain unaffected.
     std::set<std::string> const& km = known_modules.empty() ? kFallbackKnownModules : known_modules;
+
+    // Mutable local copy of the module so we can inject synthetic structs before
+    // the struct-emission passes run (mod itself is const&).
+    ast::Module mmod = mod;
 
     // Real-SDK header short names: the real SDK lives under <onboardapi/api/Foo.hpp>
     // (interface) and <onboardapi/type/Foo.hpp> (struct types), with the leading
@@ -383,6 +494,84 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
     auto local_typedefs = typedef_names(mod);
     auto local_structs  = struct_names(mod);
     auto deps           = collect_dependencies(mod, km);
+
+    // --- Portability predicates (single source of truth) ---------------------
+    // These are used both by the <Op>_Args synthesis pass below and by the
+    // per-interface port-generation loops further down, so they are defined
+    // once here rather than duplicated inside the per-iface loop.  Any param
+    // that satisfies is_portable() gets a scalar input port; the _Args struct
+    // must contain exactly those params, in order.
+
+    // Which module "owns" a cross-module named type?
+    auto owning_module_of = [&](ast::TypeRef const& ref) -> std::string {
+        if (auto* nt = std::get_if<ast::NamedType>(&ref.value))
+            if (nt->qualified_name.size() == 2 && km.count(nt->qualified_name[0]))
+                return nt->qualified_name[0];
+        return mod.name;
+    };
+    // Returns the resolved element TypeRef when `ref` is an Optional (sequence
+    // of max_size==1) whose element is itself a safe port type; else nullopt.
+    auto opt_elem = [&](ast::TypeRef const& ref) -> std::optional<ast::TypeRef> {
+        std::string owning = owning_module_of(ref);
+        auto resolved = resolve_typedef(ref, all_typedefs, owning);
+        if (auto* s = std::get_if<ast::SequenceType>(&resolved.value)) {
+            if (s->max_size && *s->max_size == 1) {
+                ast::TypeRef elem = resolve_typedef(*s->element, all_typedefs, owning);
+                if (is_safe_type(elem, local_submods, local_typedefs, all_typedefs, owning, km))
+                    return elem;
+            }
+        }
+        return std::nullopt;
+    };
+    auto is_optional_port = [&](ast::TypeRef const& ref) { return opt_elem(ref).has_value(); };
+
+    // Returns the resolved element TypeRef when `ref` is a List (unbounded
+    // sequence) whose element is a safe port type; else nullopt.
+    auto list_elem = [&](ast::TypeRef const& ref) -> std::optional<ast::TypeRef> {
+        std::string owning = owning_module_of(ref);
+        auto resolved = resolve_typedef(ref, all_typedefs, owning);
+        if (auto* s = std::get_if<ast::SequenceType>(&resolved.value)) {
+            if (!(s->max_size && *s->max_size == 1)) {
+                ast::TypeRef elem = resolve_typedef(*s->element, all_typedefs, owning);
+                if (is_safe_type(elem, local_submods, local_typedefs, all_typedefs, owning, km))
+                    return elem;
+            }
+        }
+        return std::nullopt;
+    };
+    auto is_list_port = [&](ast::TypeRef const& ref) { return list_elem(ref).has_value(); };
+
+    // A param is "portable" (gets a port) if it's a safe scalar/struct, an
+    // Optional of one, or a List of one.  THIS IS THE SINGLE SOURCE OF TRUTH
+    // used by both the _Args synthesis below and the port-emission loops.
+    auto is_portable = [&](ast::TypeRef const& ref) {
+        return is_safe_type(ref, local_submods, local_typedefs, all_typedefs, mod.name, km)
+            || is_optional_port(ref)
+            || is_list_port(ref);
+    };
+
+    // An op qualifies for a synthesized <Op>_Args struct (and therefore an
+    // in_<Op>_args port) iff it has more than one param AND at least one
+    // in-param satisfies is_portable().  This exactly mirrors the synthesis
+    // condition above (add_args_structs loop + the !s.fields.empty() guard).
+    auto op_has_args = [&](ast::Operation const& op) -> bool {
+        if (op.params.size() <= 1) return false;
+        for (auto const& p : op.params) {
+            if (p.direction == "in" && is_portable(*p.type)) return true;
+        }
+        return false;
+    };
+
+    // Synthesize <Op>_Args structs for every multi-param composer op and append
+    // them to mmod.structs, so all downstream emission passes (struct def, to_json,
+    // from_json, OP_DECLARE_TYPE, FieldDescriptors, extract/wire/tap/port/list/
+    // throttle/sync factories, Factory node) pick them up by iterating mmod.structs.
+    //
+    // This is the SAME synthesis the TS emitter runs (single source of truth in
+    // synthesize_args_structs), so the web's generated type lists carry exactly the
+    // _Args structs the engine registers. Returns divergence warnings (emitted into
+    // types_hpp below; empty in normal operation).
+    std::string synth_warnings = synthesize_args_structs(mmod, known_modules, all_typedefs);
 
     std::ostringstream h;
     h << "// AUTO-GENERATED by pipegen. Do not edit.\n";
@@ -410,6 +599,11 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
     }
     h << "\n";
 
+    // Emit any divergence warnings collected during synthesis (rare future-proofing
+    // guard; empty string in normal operation).
+    if (!synth_warnings.empty())
+        h << synth_warnings << "\n";
+
     h << "namespace " << mod.name << " {\n\n";
 
     if (!target_real_sdk) {
@@ -420,10 +614,15 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
     // Emit typedefs and structs in their original source declaration order.
     // This preserves forward-declaration dependencies (e.g. typedef sequence<PropertyType>
     // must come after struct PropertyType, not before).
-    // When targeting the real SDK, these definitions already live in the included
-    // <onboardapi/type/...> header — skip to avoid redefinition.
-    if (!target_real_sdk) {
+    //
+    // Under real-sdk mode, non-synthetic types already live in the included
+    // <onboardapi/type/...> header — skip them to avoid redefinition.
+    // Synthetic structs (e.g. <Op>_Args) are ALWAYS emitted: they are our own
+    // definitions and appear in no SDK header, so they must be present in both modes.
+    {
         // Build a merged, sorted list of (source_order, kind, index) triples.
+        // In real-sdk mode we only include synthetic structs (typedefs and real
+        // structs come from the SDK header). In stub mode we include everything.
         enum class Kind { Typedef, Struct };
         struct Item {
             std::size_t order;
@@ -431,11 +630,15 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
             std::size_t idx;
         };
         std::vector<Item> items;
-        items.reserve(mod.typedefs.size() + mod.structs.size());
-        for (std::size_t i = 0; i < mod.typedefs.size(); ++i)
-            items.push_back({mod.typedefs[i].source_order, Kind::Typedef, i});
-        for (std::size_t i = 0; i < mod.structs.size(); ++i)
-            items.push_back({mod.structs[i].source_order, Kind::Struct, i});
+        items.reserve(mod.typedefs.size() + mmod.structs.size());
+        if (!target_real_sdk) {
+            for (std::size_t i = 0; i < mod.typedefs.size(); ++i)
+                items.push_back({mod.typedefs[i].source_order, Kind::Typedef, i});
+        }
+        for (std::size_t i = 0; i < mmod.structs.size(); ++i) {
+            if (target_real_sdk && !mmod.structs[i].synthetic) continue;
+            items.push_back({mmod.structs[i].source_order, Kind::Struct, i});
+        }
         std::sort(items.begin(), items.end(),
                   [](Item const& a, Item const& b) { return a.order < b.order; });
 
@@ -443,7 +646,7 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
             if (item.kind == Kind::Typedef)
                 emit_typedef(h, mod.typedefs[item.idx], mod.name, local_submods);
             else
-                emit_struct(h, mod.structs[item.idx], mod.name, local_submods);
+                emit_struct(h, mmod.structs[item.idx], mod.name, local_submods);
         }
         if (!items.empty()) h << "\n";
     }
@@ -451,7 +654,7 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
     // Emit to_json for each struct, inside the namespace (for ADL).
     // Works in both modes — when real-SDK target, these operate on the
     // SDK's struct types (visible via the included header above).
-    for (auto const& s : mod.structs) {
+    for (auto const& s : mmod.structs) {
         h << "inline ::nlohmann::json to_json(" << s.name << " const& v) {\n";
         h << "    ::nlohmann::json j = ::nlohmann::json::object();\n";
         for (auto const& f : s.fields) {
@@ -470,21 +673,21 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
         h << "    return j;\n";
         h << "}\n";
     }
-    if (!mod.structs.empty()) h << "\n";
+    if (!mmod.structs.empty()) h << "\n";
 
     // Emit from_json for each struct, inside the namespace (for ADL).
-    for (auto const& s : mod.structs) {
+    for (auto const& s : mmod.structs) {
         h << "inline void from_json(::nlohmann::json const& j, " << s.name << "& v) {\n";
         for (auto const& f : s.fields) {
             h << "    j.at(\"" << f.name << "\").get_to(v." << f.name << ");\n";
         }
         h << "}\n";
     }
-    if (!mod.structs.empty()) h << "\n";
+    if (!mmod.structs.empty()) h << "\n";
 
     h << "\n}  // namespace " << mod.name << "\n\n";
 
-    for (auto const& s : mod.structs) {
+    for (auto const& s : mmod.structs) {
         h << "OP_DECLARE_TYPE(::" << mod.name << "::" << s.name
           << ", \"" << mod.name << "::" << s.name << "\")\n";
     }
@@ -492,7 +695,7 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
     // Emit per-struct FieldDescriptor[] tables.
     h << "\n";
     h << "#include \"flowboard/field_descriptor.hpp\"\n";
-    for (auto const& s : mod.structs) {
+    for (auto const& s : mmod.structs) {
         // Count classifiable fields up front so we can avoid zero-sized arrays
         // (which are not valid in C++). If a struct has no supported fields,
         // we still emit a one-element sentinel array with empty name + tag,
@@ -555,6 +758,7 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
     n << "#include \"flowboard/list_build_registry.hpp\"\n";
     n << "#include \"flowboard/wire_registry.hpp\"\n";
     n << "#include \"flowboard/tap_registry.hpp\"\n";
+    n << "#include \"flowboard/port_factory_registry.hpp\"\n";
     n << "#include \"flowboard/throttle.hpp\"\n";
     n << "#include \"flowboard/throttle_registry.hpp\"\n";
     n << "#include \"flowboard/synchronize.hpp\"\n";
@@ -611,50 +815,10 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
         ast::InterfaceDecl const* send_iface = is_service ? client_iface : svc_iface;
         std::string const sdk_handle = is_service ? "Service" : "Client";
 
-        // --- Optional<T> parameter support ----------------------------------
-        // A "*OptionalType" param is a typedef -> sequence<T,1>. We expose it as
-        // a port of the element type T (no port type exists for vectors), and
-        // wrap/unwrap the single-element vector at the SDK boundary.
-        auto owning_module_of = [&](ast::TypeRef const& ref) -> std::string {
-            if (auto* nt = std::get_if<ast::NamedType>(&ref.value))
-                if (nt->qualified_name.size() == 2 && km.count(nt->qualified_name[0]))
-                    return nt->qualified_name[0];
-            return mod.name;
-        };
-        // Returns the resolved element TypeRef when `ref` is an Optional whose
-        // element is itself a safe port type; else nullopt.
-        auto opt_elem = [&](ast::TypeRef const& ref) -> std::optional<ast::TypeRef> {
-            std::string owning = owning_module_of(ref);
-            auto resolved = resolve_typedef(ref, all_typedefs, owning);
-            if (auto* s = std::get_if<ast::SequenceType>(&resolved.value)) {
-                if (s->max_size && *s->max_size == 1) {
-                    ast::TypeRef elem = resolve_typedef(*s->element, all_typedefs, owning);
-                    if (is_safe_type(elem, local_submods, local_typedefs, all_typedefs, owning, km))
-                        return elem;
-                }
-            }
-            return std::nullopt;
-        };
-        auto is_optional_port = [&](ast::TypeRef const& ref) { return opt_elem(ref).has_value(); };
+        // owning_module_of, opt_elem, is_optional_port, list_elem, is_list_port,
+        // and is_portable are defined at function scope (single source of truth
+        // shared with the <Op>_Args synthesis pass above).
 
-        // --- List<T> parameter support --------------------------------------
-        // A non-Optional "*ListType" param is a typedef -> sequence<T>. We expose
-        // it as a single first-class `flowboard::ListValue` port and convert
-        // std::vector<T> <-> ListValue at the SDK boundary (each element carried
-        // as JSON via the generated to_json / from_json overloads).
-        auto list_elem = [&](ast::TypeRef const& ref) -> std::optional<ast::TypeRef> {
-            std::string owning = owning_module_of(ref);
-            auto resolved = resolve_typedef(ref, all_typedefs, owning);
-            if (auto* s = std::get_if<ast::SequenceType>(&resolved.value)) {
-                if (!(s->max_size && *s->max_size == 1)) {
-                    ast::TypeRef elem = resolve_typedef(*s->element, all_typedefs, owning);
-                    if (is_safe_type(elem, local_submods, local_typedefs, all_typedefs, owning, km))
-                        return elem;
-                }
-            }
-            return std::nullopt;
-        };
-        auto is_list_port = [&](ast::TypeRef const& ref) { return list_elem(ref).has_value(); };
         // C++ type of a List element (for ListValue <-> vector conversion).
         auto list_elem_cpp = [&](ast::TypeRef const& ref) -> std::string {
             auto e = list_elem(ref);
@@ -672,13 +836,6 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
             return "";
         };
 
-        // A param is "portable" (gets a port) if it's a safe scalar/struct, an
-        // Optional of one, or a List of one.
-        auto is_portable = [&](ast::TypeRef const& ref) {
-            return is_safe_type(ref, local_submods, local_typedefs, all_typedefs, mod.name, km)
-                || is_optional_port(ref)
-                || is_list_port(ref);
-        };
         // C++ type for the PORT: ListValue for List, element type for Optional,
         // else the param type itself.
         auto port_cpp = [&](ast::TypeRef const& ref) -> std::string {
@@ -726,6 +883,9 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
                 }
                 n << "        register_output(&out_" << op.name << "_" << p.name << ");\n";
             }
+            // Atomic struct output registration.
+            if (op_has_args(op))
+                n << "        register_output(&out_" << op.name << "_args);\n";
         }
 
         // Client node: register input ports for single-param IService ops
@@ -755,8 +915,11 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
                     n << "        register_input(&in_" << op.name << "_" << p.name << ");\n";
                     ++safe_count;
                 }
-                if (safe_count > 0)
+                if (safe_count > 0) {
                     n << "        register_input(&in_" << op.name << "_trigger);\n";
+                    if (op_has_args(op))
+                        n << "        register_input(&in_" << op.name << "_args);\n";
+                }
             }
         }
 
@@ -786,8 +949,11 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
                     n << "        register_input(&in_" << op.name << "_" << p.name << ");\n";
                     ++safe_count;
                 }
-                if (safe_count > 0)
+                if (safe_count > 0) {
                     n << "        register_input(&in_" << op.name << "_trigger);\n";
+                    if (op_has_args(op))
+                        n << "        register_input(&in_" << op.name << "_args);\n";
+                }
             }
         }
 
@@ -801,6 +967,11 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
                 n << "    ::flowboard::OutputPort<" << cpp_t
                   << "> out_" << op.name << "_" << p.name
                   << "{\"" << op.name << "." << p.name << "\"};\n";
+            }
+            // Atomic struct output: one port carrying all portable in-params as a struct.
+            if (op_has_args(op)) {
+                n << "    ::flowboard::OutputPort<::" << mod.name << "::" << op.name
+                  << "_Args> out_" << op.name << "_args{\"" << op.name << ".args\"};\n";
             }
         }
 
@@ -834,6 +1005,11 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
                 if (safe_count > 0) {
                     n << "    ::flowboard::InputPort<bool> in_" << op.name
                       << "_trigger{\"" << op.name << ".trigger\"};\n";
+                    if (op_has_args(op)) {
+                        n << "    ::flowboard::InputPort<::" << mod.name << "::" << op.name
+                          << "_Args> in_" << op.name << "_args{\""
+                          << op.name << ".args\"};\n";
+                    }
                 }
             }
         }
@@ -868,6 +1044,11 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
                 if (safe_count > 0) {
                     n << "    ::flowboard::InputPort<bool> in_" << op.name
                       << "_trigger{\"" << op.name << ".trigger\"};\n";
+                    if (op_has_args(op)) {
+                        n << "    ::flowboard::InputPort<::" << mod.name << "::" << op.name
+                          << "_Args> in_" << op.name << "_args{\""
+                          << op.name << ".args\"};\n";
+                    }
                 }
             }
         }
@@ -934,6 +1115,17 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
                               << ".emit(std::make_shared<const " << elem_t << ">(" << p.name << "));\n";
                         }
                     }
+                    // Atomic struct output: build and emit all portable in-params as one struct.
+                    if (op_has_args(op)) {
+                        n << "            {\n";
+                        n << "                auto _args = std::make_shared<::" << mod.name << "::" << op.name << "_Args>();\n";
+                        for (auto const& p : op.params) {
+                            if (p.direction == "in" && is_portable(*p.type))
+                                n << "                _args->" << p.name << " = " << p.name << ";\n";
+                        }
+                        n << "                out_" << op.name << "_args.emit(_args);\n";
+                        n << "            }\n";
+                    }
                     n << "        };\n";
                     n << "        if (mbox_recv_" << op.name << "_.put(std::move(_k), std::move(_act)))\n";
                     n << "            enqueue([this]{ mbox_recv_" << op.name << "_.drain(); });\n";
@@ -970,6 +1162,17 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
                           << ".emit(_arg); });\n";
                         n << "        }\n";
                     }
+                }
+                // Atomic struct output: build and emit all portable in-params as one struct.
+                if (op_has_args(op)) {
+                    n << "        {\n";
+                    n << "            auto _args = std::make_shared<::" << mod.name << "::" << op.name << "_Args>();\n";
+                    for (auto const& p : op.params) {
+                        if (p.direction == "in" && is_portable(*p.type))
+                            n << "            _args->" << p.name << " = " << p.name << ";\n";
+                    }
+                    n << "            enqueue([this, _args] { out_" << op.name << "_args.emit(_args); });\n";
+                    n << "        }\n";
                 }
                 }
                 n << "    }\n";
@@ -1106,6 +1309,49 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
                     }
                     n << "            });\n";
                     n << "        });\n";
+                    // Atomic args sink: one struct message = one SDK call with consistent args.
+                    // Placed right after the trigger sink; both paths coexist (supplement).
+                    if (op_has_args(op)) {
+                        std::string args_type = "::" + mod.name + "::" + op.name + "_Args";
+                        n << "        in_" << op.name
+                          << "_args.set_internal_sink([this](::flowboard::InputPort<"
+                          << args_type << ">::Value _v) {\n";
+                        n << "            enqueue([this, _v] {\n";
+                        n << "                if (!_v) return;\n";
+                        // Declare locals for ALL params (default-constructed); fill portables from struct.
+                        for (auto const& p : op.params) {
+                            std::string cpp_t = sdk_cpp(*p.type);
+                            n << "                [[maybe_unused]] " << cpp_t
+                              << " _p_" << p.name << "{};\n";
+                        }
+                        // Copy portable params directly from the struct field.
+                        // The struct field type == sdk_cpp() for all portable kinds:
+                        //   - scalar primitive/struct: direct copy
+                        //   - Optional (typedef of sequence<T,1>): struct field IS the typedef = sdk_cpp
+                        //   - List (typedef of sequence<T>): struct field IS the typedef = sdk_cpp
+                        for (auto const& p : op.params) {
+                            if (!is_portable(*p.type)) continue;
+                            n << "                _p_" << p.name << " = _v->" << p.name << ";\n";
+                        }
+                        n << "                if (!handle_) return;\n";
+                        if (op_is_coalesce(op.name)) {
+                            n << "                std::string _k = " << key_expr(op, "_p_") << ";\n";
+                            n << "                auto _act = [this";
+                            for (auto const& p : op.params) n << ", _p_" << p.name;
+                            n << "]{\n";
+                            n << "                    if (!handle_) return;\n";
+                            n << "                    if constexpr (requires { " << call_lhs << op.name << "(" << args_csv << "); }) { "
+                              << call_lhs << op.name << "(" << args_csv << "); }\n";
+                            n << "                };\n";
+                            n << "                if (mbox_send_" << op.name << "_.put(std::move(_k), std::move(_act)))\n";
+                            n << "                    enqueue([this]{ mbox_send_" << op.name << "_.drain(); });\n";
+                        } else {
+                            n << "                if constexpr (requires { " << call_lhs << op.name << "(" << args_csv << "); }) { "
+                              << call_lhs << op.name << "(" << args_csv << "); }\n";
+                        }
+                        n << "            });\n";
+                        n << "        });\n";
+                    }
                 }
             }
             n << "    }\n";
@@ -1171,7 +1417,7 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
     }
 
     // Per-struct extract factory: dispatches on field name.
-    for (auto const& s : mod.structs) {
+    for (auto const& s : mmod.structs) {
         // For each field, decide which Extract* template to instantiate and what
         // C++ type the output port should be parameterised on.
         auto cpp_for_element = [&](ast::TypeRef const& original) -> std::pair<std::string, std::string> {
@@ -1289,6 +1535,14 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
           << mod.name << "::" << s.name << "\", ::"
           << mod.name << "::" << s.name << ")\n";
 
+        // Port-factory + JSON marshaller for this struct, so Python.Script (or
+        // any other dynamic-port node) can spin up a typed port for it and
+        // round-trip values through JSON. Uses the same to_json/from_json ADL
+        // overloads emitted above.
+        n << "OP_REGISTER_PORT_FACTORY(\""
+          << mod.name << "::" << s.name << "\", ::"
+          << mod.name << "::" << s.name << ")\n";
+
         // Transform.Throttle factory for this struct. ThrottleT<T> is fully
         // type-agnostic, so the same template rate-limits struct streams too.
         std::string throttle_fn_name = "make_throttle_" + mod.name + "__" + s.name;
@@ -1300,14 +1554,14 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
         n << "OP_REGISTER_THROTTLE_FACTORY(\"" << mod.name << "::" << s.name
           << "\", &" << throttle_fn_name << ")\n";
 
-        // Transform.Synchronize factory for this struct. SynchronizeT<T> is a
-        // pure pass-through barrier, so the same template synchronises struct
-        // streams too.
-        std::string sync_fn_name = "make_synchronize_" + mod.name + "__" + s.name;
-        n << "static std::unique_ptr<::flowboard::Node>\n";
-        n << sync_fn_name << "(std::string id, ::nlohmann::json const& cfg) {\n";
-        n << "    return std::make_unique<::flowboard::SynchronizeT<::"
-          << mod.name << "::" << s.name << ">>(std::move(id), cfg);\n";
+        // Transform.Synchronize cell factory for this struct. SyncCellT<T> is a
+        // pure pass-through latched pair, so struct streams synchronise too — and
+        // may be mixed with other types in one node.
+        std::string sync_fn_name = "make_synchronize_cell_" + mod.name + "__" + s.name;
+        n << "static std::unique_ptr<::flowboard::ISyncCell>\n";
+        n << sync_fn_name << "(std::string in_name, std::string out_name) {\n";
+        n << "    return std::make_unique<::flowboard::SyncCellT<::"
+          << mod.name << "::" << s.name << ">>(std::move(in_name), std::move(out_name));\n";
         n << "}\n";
         n << "OP_REGISTER_SYNCHRONIZE_FACTORY(\"" << mod.name << "::" << s.name
           << "\", &" << sync_fn_name << ")\n";
@@ -1319,7 +1573,7 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
     // the cached values and emits via the "out" output port. Optional/List fields
     // are skipped in v1 (matching the existing Extract "unsupported element type"
     // pattern — they could be added later with append/clear semantics).
-    for (auto const& s : mod.structs) {
+    for (auto const& s : mmod.structs) {
         // Classify a field by *primitive kind* so we know whether it can be
         // edited inline as a default config value. Empty string means
         // "not a primitive" — either a struct/typedef-to-struct or unsupported.
@@ -1343,7 +1597,10 @@ EmitResult emit_cpp_for_module(ast::Module const& mod,
             auto resolved = resolve_typedef(original, all_typedefs, mod.name);
             if (std::holds_alternative<ast::SequenceType>(resolved.value)) return {};
             if (auto* p = std::get_if<ast::PrimitiveType>(&resolved.value)) {
-                if (is_number_primitive (p->name)) return "double";
+                // Returns a JSON Schema type keyword — float/double collapse to
+                // "number" (NOT the raw "double"; RJSF rejects that as an
+                // unknown field type). Integer widths collapse to "integer".
+                if (is_number_primitive (p->name)) return "number";
                 if (p->name == "boolean")          return "boolean";
                 if (is_integer_primitive(p->name)) return "integer";
                 if (p->name == "string")           return "string";

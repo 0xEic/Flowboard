@@ -1,0 +1,1066 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "complex-state-machine",
+    "description": "An advanced Flow.StateMachine: three PARALLEL chains run concurrently - Power, Safety, and a free-running Ping<->Pong oscillator (two timed transitions that hand off every 3s with no trigger). The Power chain's 'On' state holds a nested SUB-STATE-MACHINE (Idle/Tracking/Scanning); transitions show all three link kinds - trigger, null (fires instantly on entry: Booting->On), and timed (auto-fires after a delay: Scanning->Idle after 4s, Fault->Safe after 5s, Ping<->Pong every 3s). Buttons drive the triggers; the live state and last transition are logged, and the Scanning/Ping/Pong flags are plotted.",
+    "authoring": {
+      "version": "1.0",
+      "metadata": {
+        "name": "complex-state-machine",
+        "description": "An advanced Flow.StateMachine: three PARALLEL chains run concurrently - Power, Safety, and a free-running Ping<->Pong oscillator (two timed transitions that hand off every 3s with no trigger). The Power chain's 'On' state holds a nested SUB-STATE-MACHINE (Idle/Tracking/Scanning); transitions show all three link kinds - trigger, null (fires instantly on entry: Booting->On), and timed (auto-fires after a delay: Scanning->Idle after 4s, Fault->Safe after 5s, Ping<->Pong every 3s). Buttons drive the triggers; the live state and last transition are logged, and the Scanning/Ping/Pong flags are plotted."
+      },
+      "nodes": [
+        {
+          "id": "fsm",
+          "type": "Flow.StateMachine",
+          "position": {
+            "x": 900,
+            "y": 360
+          },
+          "expandedGroups": [
+            "out:active",
+            "in:On"
+          ],
+          "config": {
+            "initial": "Off",
+            "states": [
+              {
+                "name": "Off",
+                "position": {
+                  "x": 352.5,
+                  "y": 176.5
+                },
+                "initial": true
+              },
+              {
+                "name": "Booting",
+                "position": {
+                  "x": 196.6356756565479,
+                  "y": 28.953513484821812
+                }
+              },
+              {
+                "name": "On",
+                "position": {
+                  "x": 495.15593007132316,
+                  "y": 1.3028298335791675
+                },
+                "machine": {
+                  "initial": "Idle",
+                  "states": [
+                    {
+                      "name": "Idle",
+                      "position": {
+                        "x": 40,
+                        "y": 60
+                      },
+                      "initial": true
+                    },
+                    {
+                      "name": "Tracking",
+                      "position": {
+                        "x": 250,
+                        "y": 258.5
+                      }
+                    },
+                    {
+                      "name": "Scanning",
+                      "position": {
+                        "x": 440,
+                        "y": 60
+                      }
+                    }
+                  ],
+                  "transitions": [
+                    {
+                      "from": "Idle",
+                      "to": "Tracking",
+                      "trigger": "track",
+                      "labelOffset": {
+                        "x": 10,
+                        "y": -30
+                      }
+                    },
+                    {
+                      "from": "Tracking",
+                      "to": "Scanning",
+                      "trigger": "scan",
+                      "labelOffset": {
+                        "x": 10,
+                        "y": -30
+                      },
+                      "sourceOffset": {
+                        "x": 23.75,
+                        "y": 15.25
+                      },
+                      "targetOffset": {
+                        "x": 23.75,
+                        "y": 15.25
+                      }
+                    },
+                    {
+                      "from": "Scanning",
+                      "to": "Idle",
+                      "trigger": "",
+                      "kind": "timed",
+                      "delayMs": 4000,
+                      "labelOffset": {
+                        "x": 1.5,
+                        "y": 19
+                      },
+                      "sourceOffset": {
+                        "x": -4,
+                        "y": 11.5
+                      },
+                      "targetOffset": {
+                        "x": -4,
+                        "y": 11.5
+                      }
+                    },
+                    {
+                      "from": "Tracking",
+                      "to": "Idle",
+                      "trigger": "stop",
+                      "labelOffset": {
+                        "x": -21.25,
+                        "y": 26.25
+                      },
+                      "sourceOffset": {
+                        "x": -50.5,
+                        "y": 24.5
+                      },
+                      "targetOffset": {
+                        "x": -70.75,
+                        "y": 25.75
+                      }
+                    }
+                  ],
+                  "notes": [
+                    {
+                      "text": "NESTED SUB-STATE-MACHINE: the 'On' state carries its own machine (Idle/Tracking/Scanning). Its trigger ports are dotted by the parent path: 'On.track', 'On.scan', 'On.stop'; its live states appear as 'active.On.Idle' etc. Re-entering 'On' resets the submachine to Idle.",
+                      "position": {
+                        "x": 40,
+                        "y": 380
+                      },
+                      "width": 320,
+                      "height": 130
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "Safe",
+                "position": {
+                  "x": 174.60000000000002,
+                  "y": 327.5
+                },
+                "initial": true
+              },
+              {
+                "name": "Fault",
+                "position": {
+                  "x": 525.2716693315649,
+                  "y": 328.4115421241773
+                }
+              },
+              {
+                "name": "Ping",
+                "position": {
+                  "x": 157.88019183037432,
+                  "y": 467.2981434883288
+                },
+                "initial": true
+              },
+              {
+                "name": "Pong",
+                "position": {
+                  "x": 532.4552628056347,
+                  "y": 470.6815584674312
+                }
+              }
+            ],
+            "transitions": [
+              {
+                "from": "Off",
+                "to": "Booting",
+                "trigger": "powerOn",
+                "labelOffset": {
+                  "x": 6.25,
+                  "y": -4.75
+                }
+              },
+              {
+                "from": "Booting",
+                "to": "On",
+                "trigger": "",
+                "kind": "null"
+              },
+              {
+                "from": "On",
+                "to": "Off",
+                "trigger": "powerOff",
+                "labelOffset": {
+                  "x": 12.5,
+                  "y": -0.25
+                }
+              },
+              {
+                "from": "Safe",
+                "to": "Fault",
+                "trigger": "fault",
+                "labelOffset": {
+                  "x": 2.6041971360644993,
+                  "y": -45.57271861558104
+                },
+                "sourceOffset": {
+                  "x": -85.04575524963121,
+                  "y": -16.038982517830846
+                },
+                "targetOffset": {
+                  "x": 85.95467416376823,
+                  "y": -16.937408591806616
+                },
+                "waypoints": [
+                  {
+                    "x": -174.83604937248214,
+                    "y": -51.28917537883069
+                  },
+                  {
+                    "x": 174.6176320893959,
+                    "y": -51.28917537883069
+                  }
+                ]
+              },
+              {
+                "from": "Fault",
+                "to": "Safe",
+                "trigger": "",
+                "kind": "timed",
+                "delayMs": 5000,
+                "labelOffset": {
+                  "x": -6.487556084987489,
+                  "y": 27.229039234588754
+                },
+                "sourceOffset": {
+                  "x": 0,
+                  "y": 18
+                },
+                "targetOffset": {
+                  "x": 0,
+                  "y": 18
+                }
+              },
+              {
+                "from": "Ping",
+                "to": "Pong",
+                "trigger": "",
+                "kind": "timed",
+                "delayMs": 3000,
+                "sourceOffset": {
+                  "x": -1.794930638279311,
+                  "y": -22.25713991466324
+                },
+                "targetOffset": {
+                  "x": -1.794930638279311,
+                  "y": -22.25713991466324
+                }
+              },
+              {
+                "from": "Pong",
+                "to": "Ping",
+                "trigger": "",
+                "kind": "timed",
+                "delayMs": 3000,
+                "sourceOffset": {
+                  "x": 0.717972255311679,
+                  "y": 11.128569957331592
+                },
+                "targetOffset": {
+                  "x": 0.717972255311679,
+                  "y": 11.128569957331592
+                }
+              }
+            ],
+            "notes": [
+              {
+                "text": "PARALLEL CHAINS: this machine has three independent chains, each with its own initial state (Off for Power, Safe for Safety, Ping for the oscillator). They run at the same time, so the 'state' output is a comma-joined set, e.g. 'On,On.Idle,Safe,Ping'. A trigger fires every matching transition across all chains. The Ping<->Pong chain needs no trigger at all - two timed transitions hand off every 3s.",
+                "position": {
+                  "x": 760,
+                  "y": 20
+                },
+                "width": 300,
+                "height": 130
+              },
+              {
+                "text": "TRANSITION LINK KINDS:\n- trigger: fires when a boolean input port goes true (the buttons).\n- null (Booting->On): fires the instant the source state is entered - so Power On lands you in 'On' immediately.\n- timed (Scanning->Idle 4s, Fault->Safe 5s): fires automatically after the delay while the source stays active. Timed/null links create no input port.",
+                "position": {
+                  "x": 760,
+                  "y": 300
+                },
+                "width": 320,
+                "height": 160
+              }
+            ]
+          }
+        },
+        {
+          "id": "btn-power-on",
+          "type": "Debug.TriggerButton",
+          "position": {
+            "x": 380,
+            "y": 80
+          },
+          "config": {
+            "label": "Power On",
+            "mode": "pushbutton"
+          }
+        },
+        {
+          "id": "btn-power-off",
+          "type": "Debug.TriggerButton",
+          "position": {
+            "x": 380,
+            "y": 180
+          },
+          "config": {
+            "label": "Power Off",
+            "mode": "pushbutton"
+          }
+        },
+        {
+          "id": "btn-track",
+          "type": "Debug.TriggerButton",
+          "position": {
+            "x": 380,
+            "y": 280
+          },
+          "config": {
+            "label": "Track",
+            "mode": "pushbutton"
+          }
+        },
+        {
+          "id": "btn-scan",
+          "type": "Debug.TriggerButton",
+          "position": {
+            "x": 380,
+            "y": 380
+          },
+          "config": {
+            "label": "Scan",
+            "mode": "pushbutton"
+          }
+        },
+        {
+          "id": "btn-stop",
+          "type": "Debug.TriggerButton",
+          "position": {
+            "x": 374.5687499999999,
+            "y": 489.50468750000005
+          },
+          "config": {
+            "label": "Stop",
+            "mode": "pushbutton"
+          }
+        },
+        {
+          "id": "btn-fault",
+          "type": "Debug.TriggerButton",
+          "position": {
+            "x": 380,
+            "y": 600
+          },
+          "config": {
+            "label": "Inject Fault",
+            "mode": "pushbutton"
+          }
+        },
+        {
+          "id": "label-state",
+          "type": "Manipulate.String",
+          "position": {
+            "x": 1450,
+            "y": 300
+          },
+          "config": {
+            "find": "",
+            "mode": "prepend",
+            "replace": "",
+            "text": "active = "
+          }
+        },
+        {
+          "id": "state-display",
+          "type": "Debug.ValueDisplay",
+          "position": {
+            "x": 1700,
+            "y": 300
+          },
+          "width": 260,
+          "height": 110,
+          "config": {
+            "inputType": "flowboard::String",
+            "fields": []
+          }
+        },
+        {
+          "id": "log-transition",
+          "type": "Sinks.Log",
+          "position": {
+            "x": 1450,
+            "y": 460
+          },
+          "config": {
+            "inputType": "flowboard::String",
+            "prefix": "transition"
+          }
+        },
+        {
+          "id": "scanning-plot",
+          "type": "Debug.GraphDisplay",
+          "position": {
+            "x": 1450,
+            "y": 580
+          },
+          "config": {
+            "inputType": "flowboard::Bool",
+            "timeWindowSec": 30,
+            "autoScale": false,
+            "yMin": 0,
+            "yMax": 1
+          }
+        },
+        {
+          "id": "scanning-plot-copy1",
+          "type": "Debug.GraphDisplay",
+          "position": {
+            "x": 1436.8632807617182,
+            "y": 997.951946582031
+          },
+          "config": {
+            "inputType": "flowboard::Bool",
+            "timeWindowSec": 30,
+            "autoScale": false,
+            "yMin": 0,
+            "yMax": 1
+          }
+        },
+        {
+          "id": "scanning-plot-copy2",
+          "type": "Debug.GraphDisplay",
+          "position": {
+            "x": 1441.4388012695308,
+            "y": 803.605389941406
+          },
+          "config": {
+            "inputType": "flowboard::Bool",
+            "timeWindowSec": 30,
+            "autoScale": false,
+            "yMin": 0,
+            "yMax": 1
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "btn-power-on.out",
+          "to": "fsm.powerOn",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "btn-power-off.out",
+          "to": "fsm.powerOff",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "btn-track.out",
+          "to": "fsm.On.track",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "btn-scan.out",
+          "to": "fsm.On.scan",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "btn-stop.out",
+          "to": "fsm.On.stop",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "btn-fault.out",
+          "to": "fsm.fault",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "fsm.state",
+          "to": "label-state.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "label-state.out",
+          "to": "state-display.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "fsm.transition",
+          "to": "log-transition.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "fsm.active.On.Scanning",
+          "to": "scanning-plot.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "fsm.active.Pong",
+          "to": "scanning-plot-copy2.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "fsm.active.Ping",
+          "to": "scanning-plot-copy1.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        }
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "id": "fsm",
+      "type": "Flow.StateMachine",
+      "position": {
+        "x": 900,
+        "y": 360
+      },
+      "expandedGroups": [
+        "out:active",
+        "in:On"
+      ],
+      "config": {
+        "initial": "Off",
+        "states": [
+          {
+            "name": "Off",
+            "position": {
+              "x": 352.5,
+              "y": 176.5
+            },
+            "initial": true
+          },
+          {
+            "name": "Booting",
+            "position": {
+              "x": 196.6356756565479,
+              "y": 28.953513484821812
+            }
+          },
+          {
+            "name": "On",
+            "position": {
+              "x": 495.15593007132316,
+              "y": 1.3028298335791675
+            },
+            "machine": {
+              "initial": "Idle",
+              "states": [
+                {
+                  "name": "Idle",
+                  "position": {
+                    "x": 40,
+                    "y": 60
+                  },
+                  "initial": true
+                },
+                {
+                  "name": "Tracking",
+                  "position": {
+                    "x": 250,
+                    "y": 258.5
+                  }
+                },
+                {
+                  "name": "Scanning",
+                  "position": {
+                    "x": 440,
+                    "y": 60
+                  }
+                }
+              ],
+              "transitions": [
+                {
+                  "from": "Idle",
+                  "to": "Tracking",
+                  "trigger": "track",
+                  "labelOffset": {
+                    "x": 10,
+                    "y": -30
+                  }
+                },
+                {
+                  "from": "Tracking",
+                  "to": "Scanning",
+                  "trigger": "scan",
+                  "labelOffset": {
+                    "x": 10,
+                    "y": -30
+                  },
+                  "sourceOffset": {
+                    "x": 23.75,
+                    "y": 15.25
+                  },
+                  "targetOffset": {
+                    "x": 23.75,
+                    "y": 15.25
+                  }
+                },
+                {
+                  "from": "Scanning",
+                  "to": "Idle",
+                  "trigger": "",
+                  "kind": "timed",
+                  "delayMs": 4000,
+                  "labelOffset": {
+                    "x": 1.5,
+                    "y": 19
+                  },
+                  "sourceOffset": {
+                    "x": -4,
+                    "y": 11.5
+                  },
+                  "targetOffset": {
+                    "x": -4,
+                    "y": 11.5
+                  }
+                },
+                {
+                  "from": "Tracking",
+                  "to": "Idle",
+                  "trigger": "stop",
+                  "labelOffset": {
+                    "x": -21.25,
+                    "y": 26.25
+                  },
+                  "sourceOffset": {
+                    "x": -50.5,
+                    "y": 24.5
+                  },
+                  "targetOffset": {
+                    "x": -70.75,
+                    "y": 25.75
+                  }
+                }
+              ],
+              "notes": [
+                {
+                  "text": "NESTED SUB-STATE-MACHINE: the 'On' state carries its own machine (Idle/Tracking/Scanning). Its trigger ports are dotted by the parent path: 'On.track', 'On.scan', 'On.stop'; its live states appear as 'active.On.Idle' etc. Re-entering 'On' resets the submachine to Idle.",
+                  "position": {
+                    "x": 40,
+                    "y": 380
+                  },
+                  "width": 320,
+                  "height": 130
+                }
+              ]
+            }
+          },
+          {
+            "name": "Safe",
+            "position": {
+              "x": 174.60000000000002,
+              "y": 327.5
+            },
+            "initial": true
+          },
+          {
+            "name": "Fault",
+            "position": {
+              "x": 525.2716693315649,
+              "y": 328.4115421241773
+            }
+          },
+          {
+            "name": "Ping",
+            "position": {
+              "x": 157.88019183037432,
+              "y": 467.2981434883288
+            },
+            "initial": true
+          },
+          {
+            "name": "Pong",
+            "position": {
+              "x": 532.4552628056347,
+              "y": 470.6815584674312
+            }
+          }
+        ],
+        "transitions": [
+          {
+            "from": "Off",
+            "to": "Booting",
+            "trigger": "powerOn",
+            "labelOffset": {
+              "x": 6.25,
+              "y": -4.75
+            }
+          },
+          {
+            "from": "Booting",
+            "to": "On",
+            "trigger": "",
+            "kind": "null"
+          },
+          {
+            "from": "On",
+            "to": "Off",
+            "trigger": "powerOff",
+            "labelOffset": {
+              "x": 12.5,
+              "y": -0.25
+            }
+          },
+          {
+            "from": "Safe",
+            "to": "Fault",
+            "trigger": "fault",
+            "labelOffset": {
+              "x": 2.6041971360644993,
+              "y": -45.57271861558104
+            },
+            "sourceOffset": {
+              "x": -85.04575524963121,
+              "y": -16.038982517830846
+            },
+            "targetOffset": {
+              "x": 85.95467416376823,
+              "y": -16.937408591806616
+            },
+            "waypoints": [
+              {
+                "x": -174.83604937248214,
+                "y": -51.28917537883069
+              },
+              {
+                "x": 174.6176320893959,
+                "y": -51.28917537883069
+              }
+            ]
+          },
+          {
+            "from": "Fault",
+            "to": "Safe",
+            "trigger": "",
+            "kind": "timed",
+            "delayMs": 5000,
+            "labelOffset": {
+              "x": -6.487556084987489,
+              "y": 27.229039234588754
+            },
+            "sourceOffset": {
+              "x": 0,
+              "y": 18
+            },
+            "targetOffset": {
+              "x": 0,
+              "y": 18
+            }
+          },
+          {
+            "from": "Ping",
+            "to": "Pong",
+            "trigger": "",
+            "kind": "timed",
+            "delayMs": 3000,
+            "sourceOffset": {
+              "x": -1.794930638279311,
+              "y": -22.25713991466324
+            },
+            "targetOffset": {
+              "x": -1.794930638279311,
+              "y": -22.25713991466324
+            }
+          },
+          {
+            "from": "Pong",
+            "to": "Ping",
+            "trigger": "",
+            "kind": "timed",
+            "delayMs": 3000,
+            "sourceOffset": {
+              "x": 0.717972255311679,
+              "y": 11.128569957331592
+            },
+            "targetOffset": {
+              "x": 0.717972255311679,
+              "y": 11.128569957331592
+            }
+          }
+        ],
+        "notes": [
+          {
+            "text": "PARALLEL CHAINS: this machine has three independent chains, each with its own initial state (Off for Power, Safe for Safety, Ping for the oscillator). They run at the same time, so the 'state' output is a comma-joined set, e.g. 'On,On.Idle,Safe,Ping'. A trigger fires every matching transition across all chains. The Ping<->Pong chain needs no trigger at all - two timed transitions hand off every 3s.",
+            "position": {
+              "x": 760,
+              "y": 20
+            },
+            "width": 300,
+            "height": 130
+          },
+          {
+            "text": "TRANSITION LINK KINDS:\n- trigger: fires when a boolean input port goes true (the buttons).\n- null (Booting->On): fires the instant the source state is entered - so Power On lands you in 'On' immediately.\n- timed (Scanning->Idle 4s, Fault->Safe 5s): fires automatically after the delay while the source stays active. Timed/null links create no input port.",
+            "position": {
+              "x": 760,
+              "y": 300
+            },
+            "width": 320,
+            "height": 160
+          }
+        ]
+      }
+    },
+    {
+      "id": "btn-power-on",
+      "type": "Debug.TriggerButton",
+      "position": {
+        "x": 380,
+        "y": 80
+      },
+      "config": {
+        "label": "Power On",
+        "mode": "pushbutton"
+      }
+    },
+    {
+      "id": "btn-power-off",
+      "type": "Debug.TriggerButton",
+      "position": {
+        "x": 380,
+        "y": 180
+      },
+      "config": {
+        "label": "Power Off",
+        "mode": "pushbutton"
+      }
+    },
+    {
+      "id": "btn-track",
+      "type": "Debug.TriggerButton",
+      "position": {
+        "x": 380,
+        "y": 280
+      },
+      "config": {
+        "label": "Track",
+        "mode": "pushbutton"
+      }
+    },
+    {
+      "id": "btn-scan",
+      "type": "Debug.TriggerButton",
+      "position": {
+        "x": 380,
+        "y": 380
+      },
+      "config": {
+        "label": "Scan",
+        "mode": "pushbutton"
+      }
+    },
+    {
+      "id": "btn-stop",
+      "type": "Debug.TriggerButton",
+      "position": {
+        "x": 374.5687499999999,
+        "y": 489.50468750000005
+      },
+      "config": {
+        "label": "Stop",
+        "mode": "pushbutton"
+      }
+    },
+    {
+      "id": "btn-fault",
+      "type": "Debug.TriggerButton",
+      "position": {
+        "x": 380,
+        "y": 600
+      },
+      "config": {
+        "label": "Inject Fault",
+        "mode": "pushbutton"
+      }
+    },
+    {
+      "id": "label-state",
+      "type": "Manipulate.String",
+      "position": {
+        "x": 1450,
+        "y": 300
+      },
+      "config": {
+        "find": "",
+        "mode": "prepend",
+        "replace": "",
+        "text": "active = "
+      }
+    },
+    {
+      "id": "state-display",
+      "type": "Debug.ValueDisplay",
+      "position": {
+        "x": 1700,
+        "y": 300
+      },
+      "width": 260,
+      "height": 110,
+      "config": {
+        "inputType": "flowboard::String",
+        "fields": []
+      }
+    },
+    {
+      "id": "log-transition",
+      "type": "Sinks.Log",
+      "position": {
+        "x": 1450,
+        "y": 460
+      },
+      "config": {
+        "inputType": "flowboard::String",
+        "prefix": "transition"
+      }
+    },
+    {
+      "id": "scanning-plot",
+      "type": "Debug.GraphDisplay",
+      "position": {
+        "x": 1450,
+        "y": 580
+      },
+      "config": {
+        "inputType": "flowboard::Bool",
+        "timeWindowSec": 30,
+        "autoScale": false,
+        "yMin": 0,
+        "yMax": 1
+      }
+    },
+    {
+      "id": "scanning-plot-copy1",
+      "type": "Debug.GraphDisplay",
+      "position": {
+        "x": 1436.8632807617182,
+        "y": 997.951946582031
+      },
+      "config": {
+        "inputType": "flowboard::Bool",
+        "timeWindowSec": 30,
+        "autoScale": false,
+        "yMin": 0,
+        "yMax": 1
+      }
+    },
+    {
+      "id": "scanning-plot-copy2",
+      "type": "Debug.GraphDisplay",
+      "position": {
+        "x": 1441.4388012695308,
+        "y": 803.605389941406
+      },
+      "config": {
+        "inputType": "flowboard::Bool",
+        "timeWindowSec": 30,
+        "autoScale": false,
+        "yMin": 0,
+        "yMax": 1
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "btn-power-on.out",
+      "to": "fsm.powerOn",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "btn-power-off.out",
+      "to": "fsm.powerOff",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "btn-track.out",
+      "to": "fsm.On.track",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "btn-scan.out",
+      "to": "fsm.On.scan",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "btn-stop.out",
+      "to": "fsm.On.stop",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "btn-fault.out",
+      "to": "fsm.fault",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "fsm.state",
+      "to": "label-state.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "label-state.out",
+      "to": "state-display.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "fsm.transition",
+      "to": "log-transition.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "fsm.active.On.Scanning",
+      "to": "scanning-plot.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "fsm.active.Pong",
+      "to": "scanning-plot-copy2.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "fsm.active.Ping",
+      "to": "scanning-plot-copy1.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    }
+  ]
+}

@@ -115,6 +115,13 @@ export function nodePorts(node: GraphNodeLike, catalog: CatalogLike[]): { inputs
       outputs: [{ name: 'out', typeTag: t }],
     };
   }
+  if (node.type === 'Transform.Delay') {
+    const t = (cfg.inputType as string) || 'flowboard::Double';
+    return {
+      inputs:  [{ name: 'in', typeTag: t }],
+      outputs: [{ name: 'out', typeTag: t }],
+    };
+  }
   if (node.type === 'Transform.Derivative') {
     // Accepts any numeric primitive; the rate output is always Double.
     const t = (cfg.inputType as string) || 'flowboard::Double';
@@ -124,12 +131,21 @@ export function nodePorts(node: GraphNodeLike, catalog: CatalogLike[]): { inputs
     };
   }
   if (node.type === 'Transform.Synchronize') {
-    const t = (cfg.inputType as string) || 'flowboard::Double';
-    const n = Math.max(1, Math.min(64, Number(cfg.inputCount ?? 2)));
-    const inputs: Port[] = [];
+    // Per-pair types: inputTypes[i] when present, else the scalar inputType
+    // (back-compat: old graphs only have inputType + inputCount).
+    const fallback = (cfg.inputType as string) || 'flowboard::Double';
+    const types = Array.isArray(cfg.inputTypes) ? (cfg.inputTypes as unknown[]) : [];
+    const n = types.length > 0
+      ? Math.min(64, types.length)
+      : Math.max(1, Math.min(64, Number(cfg.inputCount ?? 2)));
+    const typeAt = (i: number) => {
+      const t = types[i];
+      return typeof t === 'string' && t ? t : fallback;
+    };
+    const inputs: Port[] = [{ name: 'forceOutput', typeTag: 'flowboard::Bool' }];
     const outputs: Port[] = [{ name: 'beforeOutput', typeTag: 'flowboard::Bool' }];
-    for (let i = 0; i < n; i++) inputs.push({ name: `in${i}`, typeTag: t });
-    for (let i = 0; i < n; i++) outputs.push({ name: `out${i}`, typeTag: t });
+    for (let i = 0; i < n; i++) inputs.push({ name: `in${i}`, typeTag: typeAt(i) });
+    for (let i = 0; i < n; i++) outputs.push({ name: `out${i}`, typeTag: typeAt(i) });
     outputs.push({ name: 'afterOutput', typeTag: 'flowboard::Bool' });
     return { inputs, outputs };
   }
@@ -177,8 +193,10 @@ export function nodePorts(node: GraphNodeLike, catalog: CatalogLike[]): { inputs
     };
   }
   if (node.type === 'Input.ButtonHandler') {
-    // Three fixed inputs (the decomposed EventButton) plus one bool output per
-    // configured button. Mirrors the engine's port derivation + name defaults.
+    // A single atomic struct input `args` (the whole EventButton in one message)
+    // plus one bool output per configured button. Mirrors the engine's port
+    // derivation + name defaults. `argsType` overrides the struct type tag;
+    // it defaults to M_HidJoystick::EventButton_Args.
     const raw = Array.isArray(cfg.outputs) ? (cfg.outputs as Array<Record<string, unknown>>) : [];
     const outputs: Port[] = [];
     const seen = new Set<string>();
@@ -190,14 +208,10 @@ export function nodePorts(node: GraphNodeLike, catalog: CatalogLike[]): { inputs
       seen.add(name);
       outputs.push({ name, typeTag: 'flowboard::Bool' });
     }
-    return {
-      inputs: [
-        { name: 'ButtonIndex', typeTag: 'flowboard::UInt32' },
-        { name: 'ButtonName',  typeTag: 'flowboard::String' },
-        { name: 'IsSelected',  typeTag: 'flowboard::Bool' },
-      ],
-      outputs,
-    };
+    const argsType = (typeof cfg.argsType === 'string' && cfg.argsType.trim())
+      ? cfg.argsType.trim() : 'M_HidJoystick::EventButton_Args';
+    const inputs: Port[] = [{ name: 'args', typeTag: argsType }];
+    return { inputs, outputs };
   }
   if (node.type === 'Flow.StateMachine') {
     // Trigger inputs + state/active/transition/changed outputs are derived from
@@ -227,6 +241,60 @@ export function nodePorts(node: GraphNodeLike, catalog: CatalogLike[]): { inputs
   if (node.type === 'Group.Output') {
     // A boundary output terminal consumes from inner nodes via its `in`.
     return { inputs: [{ name: 'in', typeTag: (cfg.typeTag as string) || 'flowboard::Double' }], outputs: [] };
+  }
+
+  if (node.type === 'Python.Script') {
+    // The node declares its ports in config as [{ name, type }, …]; map each to
+    // a canvas port. Mirrors how the C++ node builds its real ports, so the
+    // links shown here match what the engine creates on Apply & Reload.
+    const toPorts = (raw: unknown): Port[] =>
+      (Array.isArray(raw) ? (raw as Array<Record<string, unknown>>) : [])
+        .map(p => ({
+          name: String(p.name ?? '').trim(),
+          typeTag: String(p.type ?? 'flowboard::Double'),
+        }))
+        .filter(p => p.name);
+    return { inputs: toPorts(cfg.inputs), outputs: toPorts(cfg.outputs) };
+  }
+
+  if (node.type === 'Bytes.Pack' || node.type === 'Bytes.Unpack') {
+    const raw = Array.isArray(cfg.fields) ? (cfg.fields as Array<Record<string, unknown>>) : [];
+    const fields = raw
+      .map(f => ({ name: String(f.name ?? '').trim(), typeTag: String(f.type ?? 'flowboard::UInt8') }))
+      .filter(f => f.name);
+    if (node.type === 'Bytes.Pack') {
+      return {
+        inputs:  [...fields, { name: 'trigger', typeTag: 'flowboard::Bool' }],
+        outputs: [{ name: 'out', typeTag: 'flowboard::List' }],
+      };
+    }
+    return {
+      inputs:  [{ name: 'in', typeTag: 'flowboard::List' }],
+      outputs: fields,
+    };
+  }
+
+  if (node.type === 'Can.Encode') {
+    return {
+      inputs: [
+        { name: 'id',         typeTag: 'flowboard::UInt32' },
+        { name: 'data',       typeTag: 'flowboard::List' },
+        { name: 'isExtended', typeTag: 'flowboard::Bool' },
+        { name: 'trigger',    typeTag: 'flowboard::Bool' },
+      ],
+      outputs: [{ name: 'out', typeTag: 'flowboard::CanFrame' }],
+    };
+  }
+  if (node.type === 'Can.Decode') {
+    return {
+      inputs:  [{ name: 'frame', typeTag: 'flowboard::CanFrame' }],
+      outputs: [
+        { name: 'id',         typeTag: 'flowboard::UInt32' },
+        { name: 'data',       typeTag: 'flowboard::List' },
+        { name: 'isExtended', typeTag: 'flowboard::Bool' },
+        { name: 'dlc',        typeTag: 'flowboard::UInt8' },
+      ],
+    };
   }
 
   const entry = catalog.find(c => c.typeName === node.type);

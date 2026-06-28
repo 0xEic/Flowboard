@@ -67,7 +67,7 @@ public:
     void set_input_defaults(nlohmann::json defaults) { input_defaults_ = std::move(defaults); }
     /// \brief Seed defaults into inputs that are not connected.
     /// \param is_connected Predicate returning whether a port name has an edge.
-    void seed_input_defaults(std::function<bool(std::string const&)> const& is_connected);
+    virtual void seed_input_defaults(std::function<bool(std::string const&)> const& is_connected);
 
     /// \brief Pause the worker loop (messages still queue).
     void pause()           { paused_.store(true); }
@@ -85,9 +85,18 @@ protected:
     void register_input(InputPort<T>* port) {
         inputs_.emplace(std::string(port->name()), port);
     }
+    /// \brief Register an input port held type-erased (e.g. one built via
+    ///        flowboard::lookup_port_factory for a tag known only at runtime).
+    void register_input(IInputPort* port) {
+        inputs_.emplace(std::string(port->name()), port);
+    }
     /// \brief Register an output port so the graph can find and wire it.
     template <typename T>
     void register_output(OutputPort<T>* port) {
+        outputs_.emplace(std::string(port->name()), port);
+    }
+    /// \brief Register an output port held type-erased (see register_input).
+    void register_output(IOutputPort* port) {
         outputs_.emplace(std::string(port->name()), port);
     }
 

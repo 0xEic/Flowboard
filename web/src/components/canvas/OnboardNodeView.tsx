@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { useMemo } from 'react';
-import { Handle, Position, type NodeProps } from 'reactflow';
+import { Handle, Position, NodeResizer, type NodeProps } from 'reactflow';
 import { useGraphStore } from '../../store/graph_store';
 import { colorForTypeTag } from '../../lib/typeColor';
 import { nodePorts } from '../../lib/node_ports';
@@ -8,6 +8,10 @@ import { resolveTapKey } from '../../lib/group_compile';
 import { TriggerButtonView, ValueDisplayView, GraphDisplayView } from './DebugNodeViews';
 import { GroupInputView, GroupOutputView } from './GroupTerminalViews';
 import { NoteNodeView } from './NoteNodeView';
+import { GraphMiniPreview, machineToPreview, groupToPreview } from './GraphMiniPreview';
+import type { GroupConfig } from '../../api/types';
+import type { MachineConfig } from '../../lib/machine_compile';
+import { HelpIcon } from '../../help/HelpIcon';
 
 type Data = {
   id: string;
@@ -41,7 +45,7 @@ const isFactoryType = (typeName: string) => typeName.startsWith('Factory.');
 
 // "trigger" inputs (Factory.* + multi-param Cmd composers) get a visual cue
 // so they read as the "fire" signal rather than a data input.
-const isTrigger = (p: Port) => p.name === 'trigger' || p.name.endsWith('.trigger');
+const isTrigger = (p: Port) => p.name === 'trigger' || p.name.endsWith('.trigger') || p.name === 'forceOutput';
 
 // Group ports by the segment before the first '.' in their name. Ports with
 // no '.' collect into a synthetic "" group rendered without a header.
@@ -105,6 +109,7 @@ export function OnboardNodeView({ data, selected }: NodeProps<Data>) {
   const update  = useGraphStore(s => s.updateNodeConfig);
   const openMachine = useGraphStore(s => s.openMachine);
   const openGroup   = useGraphStore(s => s.openGroup);
+  const updateSize  = useGraphStore(s => s.updateNodeSize);
   const promotePort = useGraphStore(s => s.promotePort);
   const groupStack  = useGraphStore(s => s.groupStack);
   const editingGroup = groupStack.length > 0;
@@ -187,7 +192,7 @@ export function OnboardNodeView({ data, selected }: NodeProps<Data>) {
       .map(e => e.to.slice(data.id.length + 1)),
   );
   const inlineEditable = (p: Port) =>
-    !!thisNode && p.name !== 'trigger' && !p.name.endsWith('.trigger') && isPrimitive(p.typeTag);
+    !!thisNode && !isTrigger(p) && isPrimitive(p.typeTag);
   const inlineValue = (portName: string) =>
     inlineAtTopLevel(portName) ? nodeCfg[portName] : defaultsCfg[portName];
 
@@ -205,14 +210,25 @@ export function OnboardNodeView({ data, selected }: NodeProps<Data>) {
   return (
     <div
       className={[
-        'rounded border min-w-[200px] text-xs bg-slate-800 text-slate-100',
+        'relative w-full h-full rounded border min-w-[200px] text-xs bg-slate-800 text-slate-100',
         selected ? 'border-sky-500 ring-1 ring-sky-500' : 'border-slate-600',
       ].join(' ')}
     >
+      <NodeResizer
+        color="#0ea5e9"
+        isVisible={selected}
+        minWidth={200}
+        minHeight={64}
+        handleStyle={{ width: 8, height: 8 }}
+        onResizeEnd={(_e, p) => updateSize(data.id, { width: Math.round(p.width), height: Math.round(p.height) })}
+      />
       <div className="px-2 py-1 border-b border-slate-700 bg-slate-900 rounded-t flex items-start justify-between gap-2">
-        <div>
-          <div className="font-semibold">{data.id}</div>
-          <div className="text-slate-400 text-[10px]">{data.type}</div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold flex items-center gap-1.5">
+            <span className="truncate">{data.id}</span>
+            <HelpIcon typeName={data.type} title={`Help for ${data.type}`} />
+          </div>
+          <div className="text-slate-400 text-[10px] truncate">{data.type}</div>
         </div>
         {isMachine && (
           <button
@@ -237,6 +253,28 @@ export function OnboardNodeView({ data, selected }: NodeProps<Data>) {
           </button>
         )}
       </div>
+
+      {(isMachine || isGroup) && (
+        <div
+          className="nodrag border-b border-slate-700 bg-slate-900/40 cursor-pointer hover:bg-slate-900/70"
+          onClick={() => (isMachine ? openMachine(data.id) : openGroup(data.id))}
+          onMouseDown={e => e.stopPropagation()}
+          title={isMachine ? 'Open the state machine' : 'Open the group'}
+        >
+          <GraphMiniPreview
+            graph={isMachine
+              ? machineToPreview(thisNode?.config as Partial<MachineConfig> | undefined)
+              : groupToPreview((thisNode?.config as { group?: GroupConfig } | undefined)?.group)}
+            activeIds={isMachine
+              ? new Set(
+                  ((thisNode?.config as Partial<MachineConfig> | undefined)?.states ?? [])
+                    .map(s => s.name)
+                    .filter(n => live[resolveTapKey(`${data.id}.active.${n}`, livePrefix, liveScope)]?.value === true),
+                )
+              : undefined}
+          />
+        </div>
+      )}
 
       <div className="py-1">
         {inputGroups.map(g => {

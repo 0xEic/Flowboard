@@ -1,0 +1,624 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "can-bus",
+    "description": "CAN transport demo on the in-process VIRTUAL adapter - no hardware, no Python. A UInt16 counter (Sources.Iterator) is packed into a 2-byte little-endian payload by Bytes.Pack and built into CAN frames by two Can.Encode nodes (IDs 0x100 and 0x200, set via each encoder's 'defaults' id). Both transmit on 'virtual:bus0' through Can.Bus. A second Can.Bus on the same virtual bus (listen-only) receives every frame, Can.Filter keeps only 0x100, Can.Decode splits the frame back into id/data/dlc, and Bytes.Unpack recovers the counter for plotting and logging (a Debug.ValueDisplay also shows the raw packed bytes). Covers all CAN/Bus nodes (Can.Bus x2, Can.Encode, Can.Decode, Can.Filter) using only the byte-based nodes for data. Runs as-is; real hardware uses an adapter spec like 'socketcan:can0' or 'peak:0'.",
+    "authoring": {
+      "version": "1.0",
+      "metadata": {
+        "name": "can-bus",
+        "description": "CAN transport demo on the in-process VIRTUAL adapter - no hardware, no Python. A UInt16 counter (Sources.Iterator) is packed into a 2-byte little-endian payload by Bytes.Pack and built into CAN frames by two Can.Encode nodes (IDs 0x100 and 0x200, set via each encoder's 'defaults' id). Both transmit on 'virtual:bus0' through Can.Bus. A second Can.Bus on the same virtual bus (listen-only) receives every frame, Can.Filter keeps only 0x100, Can.Decode splits the frame back into id/data/dlc, and Bytes.Unpack recovers the counter for plotting and logging (a Debug.ValueDisplay also shows the raw packed bytes). Covers all CAN/Bus nodes (Can.Bus x2, Can.Encode, Can.Decode, Can.Filter) using only the byte-based nodes for data. Runs as-is; real hardware uses an adapter spec like 'socketcan:can0' or 'peak:0'."
+      },
+      "nodes": [
+        {
+          "id": "counter",
+          "type": "Sources.Iterator",
+          "position": {
+            "x": -10.59512408486745,
+            "y": 162.66084671599748
+          },
+          "config": {
+            "autoReverse": false,
+            "autostart": true,
+            "endValue": 1000,
+            "loop": true,
+            "specialEndEndValue": "linear",
+            "specialEndStartValue": "linear",
+            "specialStartEndValue": "linear",
+            "specialStartStartValue": "linear",
+            "startValue": 0,
+            "stepSize": 1,
+            "timeBetweenStepsMs": 600,
+            "valueType": "flowboard::UInt16"
+          }
+        },
+        {
+          "id": "pack",
+          "type": "Bytes.Pack",
+          "position": {
+            "x": 303.63278343223715,
+            "y": 187.69043816559753
+          },
+          "config": {
+            "endian": "little",
+            "length": 2,
+            "autoTriggerOnNewInput": true,
+            "fields": [
+              {
+                "name": "count",
+                "type": "flowboard::UInt16",
+                "offset": 0
+              }
+            ]
+          }
+        },
+        {
+          "id": "encode-100",
+          "type": "Can.Encode",
+          "position": {
+            "x": 570.1122937870889,
+            "y": 220
+          },
+          "config": {
+            "autoTriggerOnNewInput": true,
+            "defaults": {
+              "id": 256
+            }
+          }
+        },
+        {
+          "id": "encode-200",
+          "type": "Can.Encode",
+          "position": {
+            "x": 570.1122937870889,
+            "y": 442.62213934843686
+          },
+          "config": {
+            "autoTriggerOnNewInput": true,
+            "defaults": {
+              "id": 512
+            }
+          }
+        },
+        {
+          "id": "can-tx",
+          "type": "Can.Bus",
+          "position": {
+            "x": 840,
+            "y": 280
+          },
+          "config": {
+            "adapter": "virtual:bus0",
+            "bitrate": 500000,
+            "listenOnly": false,
+            "autoReconnect": true,
+            "reconnectIntervalMs": 1000
+          }
+        },
+        {
+          "id": "can-rx",
+          "type": "Can.Bus",
+          "position": {
+            "x": 840,
+            "y": 480
+          },
+          "config": {
+            "adapter": "virtual:bus0",
+            "bitrate": 500000,
+            "listenOnly": true,
+            "autoReconnect": true,
+            "reconnectIntervalMs": 1000
+          }
+        },
+        {
+          "id": "filter",
+          "type": "Can.Filter",
+          "position": {
+            "x": 1090,
+            "y": 480
+          },
+          "config": {
+            "mode": "acceptIds",
+            "ids": [
+              256
+            ]
+          }
+        },
+        {
+          "id": "decode",
+          "type": "Can.Decode",
+          "position": {
+            "x": 1320,
+            "y": 480
+          },
+          "config": {}
+        },
+        {
+          "id": "unpack",
+          "type": "Bytes.Unpack",
+          "position": {
+            "x": 1560,
+            "y": 480
+          },
+          "config": {
+            "endian": "little",
+            "fields": [
+              {
+                "name": "count",
+                "type": "flowboard::UInt16",
+                "offset": 0
+              }
+            ]
+          }
+        },
+        {
+          "id": "plot-count",
+          "type": "Debug.GraphDisplay",
+          "position": {
+            "x": 1800,
+            "y": 420
+          },
+          "width": 360,
+          "height": 240,
+          "config": {
+            "inputType": "flowboard::UInt16",
+            "timeWindowSec": 30,
+            "autoScale": true,
+            "yMin": 0,
+            "yMax": 1000
+          }
+        },
+        {
+          "id": "log-count",
+          "type": "Sinks.Log",
+          "position": {
+            "x": 1800,
+            "y": 700
+          },
+          "config": {
+            "inputType": "flowboard::UInt16",
+            "prefix": "can count (id 0x100)"
+          }
+        },
+        {
+          "id": "show-id",
+          "type": "Debug.ValueDisplay",
+          "position": {
+            "x": 1560,
+            "y": 660
+          },
+          "width": 220,
+          "height": 110,
+          "config": {
+            "inputType": "flowboard::UInt32",
+            "fields": []
+          }
+        },
+        {
+          "id": "rx-connected",
+          "type": "Debug.ValueDisplay",
+          "position": {
+            "x": 1090,
+            "y": 660
+          },
+          "width": 220,
+          "height": 110,
+          "config": {
+            "inputType": "flowboard::Bool",
+            "fields": []
+          }
+        },
+        {
+          "id": "note-virtual",
+          "type": "Note",
+          "position": {
+            "x": 841.748092898958,
+            "y": 100.42487130112332
+          },
+          "width": 360,
+          "height": 150,
+          "config": {
+            "text": "VIRTUAL (in-process) CAN bus. Every Can.Bus whose 'adapter' is 'virtual:bus0' shares one in-process bus - no hardware. Here 'can-tx' transmits and 'can-rx' (listen-only, same bus) receives. The two Can.Encode nodes send IDs 0x100 (256) and 0x200 (512); the init frame each encoder emits when its constant ID arrives carries no data and is harmless. Real adapters: 'socketcan:can0', 'peak:0'."
+          }
+        },
+        {
+          "id": "note-filter",
+          "type": "Note",
+          "position": {
+            "x": 1280,
+            "y": 280
+          },
+          "width": 300,
+          "height": 140,
+          "config": {
+            "text": "Can.Filter mode 'acceptIds' ids:[256] passes only 0x100 and drops 0x200. Other modes: acceptAll, rejectIds, idRange (idMin/idMax), mask (idMask/idMatch). Can.Decode then splits the frame; Bytes.Unpack reads the 2-byte little-endian counter back out of the payload."
+          }
+        },
+        {
+          "id": "debug-valuedisplay-1",
+          "type": "Debug.ValueDisplay",
+          "config": {
+            "fields": [],
+            "inputType": "flowboard::List"
+          },
+          "position": {
+            "x": 564.0200790655012,
+            "y": 42.62279250098763
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "counter.value",
+          "to": "pack.count",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "pack.out",
+          "to": "encode-100.data",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "pack.out",
+          "to": "encode-200.data",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "encode-100.out",
+          "to": "can-tx.tx",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "encode-200.out",
+          "to": "can-tx.tx",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "can-rx.rx",
+          "to": "filter.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "filter.out",
+          "to": "decode.frame",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "decode.data",
+          "to": "unpack.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "unpack.count",
+          "to": "plot-count.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "unpack.count",
+          "to": "log-count.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "decode.id",
+          "to": "show-id.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "can-rx.connected",
+          "to": "rx-connected.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        },
+        {
+          "from": "pack.out",
+          "to": "debug-valuedisplay-1.in",
+          "capacity": 256,
+          "policy": "drop_oldest"
+        }
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "id": "counter",
+      "type": "Sources.Iterator",
+      "position": {
+        "x": -10.59512408486745,
+        "y": 162.66084671599748
+      },
+      "config": {
+        "autoReverse": false,
+        "autostart": true,
+        "endValue": 1000,
+        "loop": true,
+        "specialEndEndValue": "linear",
+        "specialEndStartValue": "linear",
+        "specialStartEndValue": "linear",
+        "specialStartStartValue": "linear",
+        "startValue": 0,
+        "stepSize": 1,
+        "timeBetweenStepsMs": 600,
+        "valueType": "flowboard::UInt16"
+      }
+    },
+    {
+      "id": "pack",
+      "type": "Bytes.Pack",
+      "position": {
+        "x": 303.63278343223715,
+        "y": 187.69043816559753
+      },
+      "config": {
+        "endian": "little",
+        "length": 2,
+        "autoTriggerOnNewInput": true,
+        "fields": [
+          {
+            "name": "count",
+            "type": "flowboard::UInt16",
+            "offset": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "encode-100",
+      "type": "Can.Encode",
+      "position": {
+        "x": 570.1122937870889,
+        "y": 220
+      },
+      "config": {
+        "autoTriggerOnNewInput": true,
+        "defaults": {
+          "id": 256
+        }
+      }
+    },
+    {
+      "id": "encode-200",
+      "type": "Can.Encode",
+      "position": {
+        "x": 570.1122937870889,
+        "y": 442.62213934843686
+      },
+      "config": {
+        "autoTriggerOnNewInput": true,
+        "defaults": {
+          "id": 512
+        }
+      }
+    },
+    {
+      "id": "can-tx",
+      "type": "Can.Bus",
+      "position": {
+        "x": 840,
+        "y": 280
+      },
+      "config": {
+        "adapter": "virtual:bus0",
+        "bitrate": 500000,
+        "listenOnly": false,
+        "autoReconnect": true,
+        "reconnectIntervalMs": 1000
+      }
+    },
+    {
+      "id": "can-rx",
+      "type": "Can.Bus",
+      "position": {
+        "x": 840,
+        "y": 480
+      },
+      "config": {
+        "adapter": "virtual:bus0",
+        "bitrate": 500000,
+        "listenOnly": true,
+        "autoReconnect": true,
+        "reconnectIntervalMs": 1000
+      }
+    },
+    {
+      "id": "filter",
+      "type": "Can.Filter",
+      "position": {
+        "x": 1090,
+        "y": 480
+      },
+      "config": {
+        "mode": "acceptIds",
+        "ids": [
+          256
+        ]
+      }
+    },
+    {
+      "id": "decode",
+      "type": "Can.Decode",
+      "position": {
+        "x": 1320,
+        "y": 480
+      },
+      "config": {}
+    },
+    {
+      "id": "unpack",
+      "type": "Bytes.Unpack",
+      "position": {
+        "x": 1560,
+        "y": 480
+      },
+      "config": {
+        "endian": "little",
+        "fields": [
+          {
+            "name": "count",
+            "type": "flowboard::UInt16",
+            "offset": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "plot-count",
+      "type": "Debug.GraphDisplay",
+      "position": {
+        "x": 1800,
+        "y": 420
+      },
+      "width": 360,
+      "height": 240,
+      "config": {
+        "inputType": "flowboard::UInt16",
+        "timeWindowSec": 30,
+        "autoScale": true,
+        "yMin": 0,
+        "yMax": 1000
+      }
+    },
+    {
+      "id": "log-count",
+      "type": "Sinks.Log",
+      "position": {
+        "x": 1800,
+        "y": 700
+      },
+      "config": {
+        "inputType": "flowboard::UInt16",
+        "prefix": "can count (id 0x100)"
+      }
+    },
+    {
+      "id": "show-id",
+      "type": "Debug.ValueDisplay",
+      "position": {
+        "x": 1560,
+        "y": 660
+      },
+      "width": 220,
+      "height": 110,
+      "config": {
+        "inputType": "flowboard::UInt32",
+        "fields": []
+      }
+    },
+    {
+      "id": "rx-connected",
+      "type": "Debug.ValueDisplay",
+      "position": {
+        "x": 1090,
+        "y": 660
+      },
+      "width": 220,
+      "height": 110,
+      "config": {
+        "inputType": "flowboard::Bool",
+        "fields": []
+      }
+    },
+    {
+      "id": "debug-valuedisplay-1",
+      "type": "Debug.ValueDisplay",
+      "config": {
+        "fields": [],
+        "inputType": "flowboard::List"
+      },
+      "position": {
+        "x": 564.0200790655012,
+        "y": 42.62279250098763
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "counter.value",
+      "to": "pack.count",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "pack.out",
+      "to": "encode-100.data",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "pack.out",
+      "to": "encode-200.data",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "encode-100.out",
+      "to": "can-tx.tx",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "encode-200.out",
+      "to": "can-tx.tx",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "can-rx.rx",
+      "to": "filter.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "filter.out",
+      "to": "decode.frame",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "decode.data",
+      "to": "unpack.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "unpack.count",
+      "to": "plot-count.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "unpack.count",
+      "to": "log-count.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "decode.id",
+      "to": "show-id.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "can-rx.connected",
+      "to": "rx-connected.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    },
+    {
+      "from": "pack.out",
+      "to": "debug-valuedisplay-1.in",
+      "capacity": 256,
+      "policy": "drop_oldest"
+    }
+  ]
+}

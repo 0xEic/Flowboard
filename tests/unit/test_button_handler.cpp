@@ -10,6 +10,7 @@
 #include "flowboard/node.hpp"
 #include "flowboard/port.hpp"
 #include "flowboard/registry.hpp"
+#include "M_HidJoystick_types.hpp"
 
 using namespace flowboard;
 
@@ -33,24 +34,28 @@ void wire(Node& n, Caps& c, std::string const& port) {
         ->attach_sink([&c, port](auto v) { c.last[port] = v; });
 }
 
-// Deliver one EventButton: index, then name, then IsSelected (the trigger).
+// Deliver one EventButton as a single atomic struct on the 'args' input.
 void fire_event(Node& n, std::uint32_t index, std::string const& name, bool pressed) {
-    dynamic_cast<InputPort<std::uint32_t>*>(n.input("ButtonIndex"))
-        ->deliver(std::make_shared<const std::uint32_t>(index));
-    dynamic_cast<InputPort<std::string>*>(n.input("ButtonName"))
-        ->deliver(std::make_shared<const std::string>(name));
-    dynamic_cast<InputPort<bool>*>(n.input("IsSelected"))
-        ->deliver(std::make_shared<const bool>(pressed));
+    using ArgsPort = InputPort<M_HidJoystick::EventButton_Args>;
+    auto* args = dynamic_cast<ArgsPort*>(n.input("args"));
+    REQUIRE(args);
+    args->deliver(std::make_shared<const M_HidJoystick::EventButton_Args>(
+        M_HidJoystick::EventButton_Args{index, name, pressed}));
 }
 
 }  // namespace
 
-TEST_CASE("Input.ButtonHandler derives one bool output per configured button") {
+TEST_CASE("Input.ButtonHandler exposes a single 'args' struct input, not 3 scalars") {
     auto node = NodeRegistry::instance().create("Input.ButtonHandler", "bh", two_output_cfg());
     REQUIRE(node);
-    CHECK(node->input("ButtonIndex") != nullptr);
-    CHECK(node->input("ButtonName") != nullptr);
-    CHECK(node->input("IsSelected") != nullptr);
+    // The atomic EventButton_Args struct input is the only input.
+    CHECK(node->input("args") != nullptr);
+    CHECK(dynamic_cast<InputPort<M_HidJoystick::EventButton_Args>*>(node->input("args")) != nullptr);
+    // The old decomposed scalar inputs are gone.
+    CHECK(node->input("ButtonIndex") == nullptr);
+    CHECK(node->input("ButtonName")  == nullptr);
+    CHECK(node->input("IsSelected")  == nullptr);
+    // One bool output per configured button.
     CHECK(node->output("fire") != nullptr);   // byIndex, explicit name
     CHECK(node->output("Menu") != nullptr);    // byName, defaulted to the name
 }
@@ -103,6 +108,22 @@ TEST_CASE("Input.ButtonHandler ignores buttons with no configured output") {
     node->stop();
 }
 
+TEST_CASE("Input.ButtonHandler routes a whole EventButton atomically (no inter-input race)") {
+    auto node = NodeRegistry::instance().create("Input.ButtonHandler", "bh", two_output_cfg());
+    Caps c;
+    wire(*node, c, "fire");
+    wire(*node, c, "Menu");
+    node->start();
+
+    // index=3 + IsSelected=true delivered together → only "fire" reacts, true.
+    fire_event(*node, 3, "ignored-name", true);
+    settle();
+    REQUIRE(c.last.count("fire"));
+    CHECK(*c.last["fire"] == true);
+    CHECK(c.last.count("Menu") == 0);
+    node->stop();
+}
+
 TEST_CASE("Input.ButtonHandler rejects an unknown match mode") {
     ::nlohmann::json bad = {{"outputs", {{{"match", "byColor"}, {"index", 1}}}}};
     CHECK_THROWS(NodeRegistry::instance().create("Input.ButtonHandler", "bh", bad));
@@ -114,4 +135,12 @@ TEST_CASE("Input.ButtonHandler rejects duplicate output port names") {
         {{"match", "byIndex"}, {"index", 2}, {"output", "x"}},
     }}};
     CHECK_THROWS(NodeRegistry::instance().create("Input.ButtonHandler", "bh", dup));
+}
+
+TEST_CASE("Input.ButtonHandler argsType overrides the struct type; unknown type is rejected") {
+    ::nlohmann::json bad = {
+        {"outputs", {{{"match", "byIndex"}, {"index", 0}}}},
+        {"argsType", "NoSuchType::Args"},
+    };
+    CHECK_THROWS(NodeRegistry::instance().create("Input.ButtonHandler", "bh_x", bad));
 }

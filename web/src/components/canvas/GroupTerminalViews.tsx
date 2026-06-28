@@ -3,6 +3,7 @@ import { Handle, Position } from 'reactflow';
 import { useGraphStore } from '../../store/graph_store';
 import { colorForTypeTag } from '../../lib/typeColor';
 import { TypeSelect } from '../form/TypeSelect';
+import { HelpIcon } from '../../help/HelpIcon';
 
 const dot = (tag: string) => ({
   width: 10, height: 10, borderRadius: 999,
@@ -35,7 +36,11 @@ function TerminalCard(props: {
       ].join(' ')}
     >
       <div className="px-2 py-1 border-b border-slate-700 bg-slate-900 rounded-t flex items-center gap-1">
-        <span className="text-amber-300">{isInput ? '⇥ Group Input' : 'Group Output ⇥'}</span>
+        <span className="text-amber-300 flex-1">{isInput ? '⇥ Group Input' : 'Group Output ⇥'}</span>
+        <HelpIcon
+          typeName={isInput ? 'Group.Input' : 'Group.Output'}
+          title={`Help for ${isInput ? 'Group.Input' : 'Group.Output'}`}
+        />
       </div>
       <div className="p-2 space-y-1">
         <input

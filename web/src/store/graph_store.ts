@@ -3,9 +3,9 @@ import { create } from 'zustand';
 import type { CatalogEntry, GraphJson, GraphNodeJson, GraphEdgeJson } from '../api/types';
 import { api, openWs } from '../api/client';
 import {
-  compile, decompile,
+  compile, decompile, SELF_LOOP_DEFAULT_CONTROL,
   type InnerCanvas, type InnerNode, type InnerEdge,
-  type InnerStateNode, type InnerTransitionNode, type MachineConfig,
+  type InnerStateNode, type InnerNoteNode, type MachineConfig, type XY,
 } from '../lib/machine_compile';
 import { toSavedFile, fromSavedFile } from '../lib/group_compile';
 import { nodePorts } from '../lib/node_ports';
@@ -128,20 +128,39 @@ type State = {
   innerPast:        InnerCanvas[];
   innerFuture:      InnerCanvas[];
   innerClipboard:   { nodes: InnerNode[]; edges: InnerEdge[] } | null;
+  // Drill-down stack for nested (composite-state) submachines. Empty = editing
+  // the root machine (the graph node). Each entry holds the parent canvas to
+  // write back to and the composite state being descended into.
+  machineStack:     { stateId: string; stateName: string; outer: InnerCanvas }[];
 
   openMachine:  (id: string) => void;
   closeMachine: () => boolean;   // returns false (and stays open) on compile error
-  addInnerState:        (pos: { x: number; y: number }) => void;
-  addInnerTransition:   (pos: { x: number; y: number }) => void;
-  updateInnerState:     (id: string, patch: Partial<Pick<InnerStateNode, 'name' | 'initial'>>) => void;
-  updateInnerTransition:(id: string, patch: Partial<Pick<InnerTransitionNode, 'trigger'>>) => void;
-  setInitialState:      (id: string) => void;
-  moveInnerNode:        (id: string, pos: { x: number; y: number }) => void;
-  moveInnerNodes:       (updates: { id: string; pos: { x: number; y: number } }[]) => void;
-  addInnerEdge:         (source: string, target: string) => void;
+  // Open a state's submachine into the inner canvas (creating a minimal one if
+  // absent). closeSubmachine compiles it back onto the parent state and pops.
+  openSubmachine:  (stateId: string) => void;
+  closeSubmachine: () => boolean;  // returns false (and stays open) on compile error
+  removeSubmachine: (stateId: string) => void;
+  addInnerState:        (pos: XY) => void;
+  addInnerNote:         (pos: XY) => void;
+  updateInnerNote:      (id: string, patch: Partial<Pick<InnerNoteNode, 'text' | 'width' | 'height'>>) => void;
+  // Default trigger is auto-numbered. Self-loops get the default control point.
+  addInnerEdge:         (source: string, target: string, opts?: {
+                          trigger?: string;
+                          labelOffset?: XY;
+                          controlPoint?: XY | null;
+                        }) => void;
+  updateInnerState:     (id: string, patch: Partial<Pick<InnerStateNode, 'name' | 'initial' | 'width' | 'height'>>) => void;
+  // `index` is the position in innerCanvas.edges at the time the caller last
+  // observed the canvas (e.g. via a React Flow edge id `ie${i}`). Valid only
+  // for that snapshot — do not cache across store mutations.
+  updateInnerEdge:      (index: number, patch: Partial<Pick<InnerEdge, 'kind' | 'trigger' | 'delayMs' | 'waypoints' | 'labelOffset' | 'controlPoint' | 'sourceOffset' | 'targetOffset'>>) => void;
+  toggleInitialState:   (id: string) => void;
+  moveInnerNode:        (id: string, pos: XY) => void;
+  moveInnerNodes:       (updates: { id: string; pos: XY }[]) => void;
   removeInnerNode:      (id: string) => void;
   removeInnerNodes:     (ids: string[]) => void;
-  removeInnerEdge:      (source: string, target: string) => void;
+  // Same snapshot-bound index convention as updateInnerEdge above.
+  removeInnerEdgeAt:    (index: number) => void;
   undoInner:            () => void;
   redoInner:            () => void;
   copyInnerSelection:   (ids: string[]) => void;
@@ -195,7 +214,9 @@ function recordInner(state: State): Pick<State, 'innerPast' | 'innerFuture'> {
 // Layered left-to-right auto-layout for the inner FSM canvas (state -> transition
 // -> state). Longest-path layering + per-layer stacking with gaps; centred.
 function layoutInner(canvas: InnerCanvas): InnerNode[] {
-  const ids = canvas.nodes.map(n => n.id);
+  // Auto-arrange only the states (which the transitions connect); Note
+  // annotations keep their placement.
+  const ids = canvas.nodes.filter(n => n.kind === 'state').map(n => n.id);
   if (ids.length === 0) return canvas.nodes;
   const idx = new Map(ids.map((id, i) => [id, i]));
   const layer = new Map(ids.map(id => [id, 0]));
@@ -213,8 +234,7 @@ function layoutInner(canvas: InnerCanvas): InnerNode[] {
   for (const id of ids) layers[layer.get(id)!].push(id);
 
   const H_GAP = 90, V_GAP = 55;
-  const sizeById = new Map(canvas.nodes.map(n =>
-    [n.id, n.kind === 'state' ? { w: 150, h: 92 } : { w: 130, h: 70 }]));
+  const sizeById = new Map(canvas.nodes.map(n => [n.id, { w: 150, h: 92 }]));
   const layerHeight = (L: string[]) =>
     L.reduce((s, id) => s + sizeById.get(id)!.h, 0) + Math.max(0, L.length - 1) * V_GAP;
   const tallest = Math.max(0, ...layers.map(layerHeight));
@@ -272,6 +292,7 @@ export const useGraphStore = create<State>((set, get) => ({
   innerPast: [],
   innerFuture: [],
   innerClipboard: null,
+  machineStack: [],
 
   refreshCatalog:  async () => set({ catalog:  await api.catalog() }),
   refreshLogTypes: async () => set({ logTypes: await api.logTypes() }),
@@ -741,17 +762,22 @@ export const useGraphStore = create<State>((set, get) => ({
       initial: cfg.initial ?? '',
       states: cfg.states ?? [],
       transitions: cfg.transitions ?? [],
+      notes: cfg.notes ?? [],
     });
     return {
       editingMachineId: id, innerCanvas: canvas, innerError: null, selectedNodeId: null,
-      innerPast: [], innerFuture: [], innerCounter: 0,
+      innerPast: [], innerFuture: [], innerCounter: 0, machineStack: [],
     };
   }),
 
   closeMachine: () => {
+    // Fold any open substate levels back up first (each compiles onto its parent).
+    while (get().machineStack.length > 0) {
+      if (!get().closeSubmachine()) return false;  // a level down the stack has errors
+    }
     const state = get();
     if (!state.editingMachineId || !state.innerCanvas) {
-      set({ editingMachineId: null, innerCanvas: null, innerError: null });
+      set({ editingMachineId: null, innerCanvas: null, innerError: null, machineStack: [] });
       return true;
     }
     const result = compile(state.innerCanvas);
@@ -767,12 +793,61 @@ export const useGraphStore = create<State>((set, get) => ({
         n.id === id ? { ...n, config: cfg as unknown as Record<string, unknown> } : n);
       return {
         graph: { ...s.graph, nodes },
-        editingMachineId: null, innerCanvas: null, innerError: null,
+        editingMachineId: null, innerCanvas: null, innerError: null, machineStack: [],
         ...recordHistory(s),
       };
     });
     return true;
   },
+
+  // Descend into a state's submachine. Creates a minimal one (single initial
+  // state) if the state has none yet -- it persists when the level is closed.
+  openSubmachine: stateId => set(state => {
+    if (!state.innerCanvas) return {};
+    const node = state.innerCanvas.nodes.find(
+      (n): n is InnerStateNode => n.id === stateId && n.kind === 'state');
+    if (!node) return {};
+    const cfg: MachineConfig = node.machine ?? {
+      initial: 'S1',
+      states: [{ name: 'S1', position: { x: 180, y: 120 }, initial: true }],
+      transitions: [],
+    };
+    return {
+      machineStack: [...state.machineStack, { stateId, stateName: node.name, outer: state.innerCanvas }],
+      innerCanvas: decompile(cfg),
+      innerError: null, innerPast: [], innerFuture: [], innerCounter: 0,
+      selectedNodeId: null, selectedNodeIds: [],
+    };
+  }),
+
+  // Compile the current level back onto its parent composite state and pop.
+  closeSubmachine: () => {
+    const state = get();
+    if (state.machineStack.length === 0 || !state.innerCanvas) return false;
+    const result = compile(state.innerCanvas);
+    if (!result.config) {
+      set({ innerError: result.errors.join('; ') });
+      return false;
+    }
+    const top = state.machineStack[state.machineStack.length - 1];
+    const cfg = result.config;
+    const outerNodes = top.outer.nodes.map(n =>
+      n.id === top.stateId && n.kind === 'state' ? { ...n, machine: cfg } : n);
+    set({
+      machineStack: state.machineStack.slice(0, -1),
+      innerCanvas: { ...top.outer, nodes: outerNodes },
+      innerError: null, innerPast: [], innerFuture: [], innerCounter: 0,
+      selectedNodeId: null, selectedNodeIds: [],
+    });
+    return true;
+  },
+
+  removeSubmachine: stateId => set(state => {
+    if (!state.innerCanvas) return {};
+    const nodes = state.innerCanvas.nodes.map(n =>
+      n.id === stateId && n.kind === 'state' ? { ...n, machine: null } : n);
+    return { innerCanvas: { ...state.innerCanvas, nodes }, innerError: null, ...recordInner(state) };
+  }),
 
   addInnerState: pos => set(state => {
     if (!state.innerCanvas) return {};
@@ -785,21 +860,9 @@ export const useGraphStore = create<State>((set, get) => ({
     while (existing.has(name)) name = `State${name.length}`;
     const node: InnerStateNode = {
       id: `state:__new${n}`, kind: 'state', name,
-      initial: existing.size === 0,  // first state added becomes initial
+      initial: existing.size === 0,
       position: pos,
-    };
-    return {
-      innerCanvas: { ...state.innerCanvas, nodes: [...state.innerCanvas.nodes, node] },
-      innerCounter: n,
-      ...recordInner(state),
-    };
-  }),
-
-  addInnerTransition: pos => set(state => {
-    if (!state.innerCanvas) return {};
-    const n = state.innerCounter + 1;
-    const node: InnerTransitionNode = {
-      id: `transition:__new${n}`, kind: 'transition', trigger: `trigger${n}`, position: pos,
+      machine: null,
     };
     return {
       innerCanvas: { ...state.innerCanvas, nodes: [...state.innerCanvas.nodes, node] },
@@ -815,17 +878,34 @@ export const useGraphStore = create<State>((set, get) => ({
     return { innerCanvas: { ...state.innerCanvas, nodes }, innerError: null, ...recordInner(state) };
   }),
 
-  updateInnerTransition: (id, patch) => set(state => {
+  // Add a canvas-only Note annotation to the inner state-machine canvas.
+  addInnerNote: pos => set(state => {
+    if (!state.innerCanvas) return {};
+    const n = state.innerCounter + 1;
+    const node: InnerNoteNode = {
+      id: `note:__new${n}`, kind: 'note', text: '', position: pos,
+      width: 200, height: 90,
+    };
+    return {
+      innerCanvas: { ...state.innerCanvas, nodes: [...state.innerCanvas.nodes, node] },
+      innerCounter: n,
+      ...recordInner(state),
+    };
+  }),
+
+  updateInnerNote: (id, patch) => set(state => {
     if (!state.innerCanvas) return {};
     const nodes = state.innerCanvas.nodes.map(x =>
-      x.id === id && x.kind === 'transition' ? { ...x, ...patch } : x);
+      x.id === id && x.kind === 'note' ? { ...x, ...patch } : x);
     return { innerCanvas: { ...state.innerCanvas, nodes }, innerError: null, ...recordInner(state) };
   }),
 
-  setInitialState: id => set(state => {
+  // Toggle a state's initial flag. Multiple initials are allowed -- one per chain
+  // (validated on compile) -- so each chain has its own entry/active state.
+  toggleInitialState: id => set(state => {
     if (!state.innerCanvas) return {};
     const nodes = state.innerCanvas.nodes.map(x =>
-      x.kind === 'state' ? { ...x, initial: x.id === id } : x);
+      x.id === id && x.kind === 'state' ? { ...x, initial: !x.initial } : x);
     return { innerCanvas: { ...state.innerCanvas, nodes }, innerError: null, ...recordInner(state) };
   }),
 
@@ -844,17 +924,39 @@ export const useGraphStore = create<State>((set, get) => ({
     return { innerCanvas: { ...state.innerCanvas, nodes }, ...recordInner(state) };
   }),
 
-  addInnerEdge: (source, target) => set(state => {
+  addInnerEdge: (source, target, opts) => set(state => {
     if (!state.innerCanvas) return {};
-    if (state.innerCanvas.edges.some(e => e.source === source && e.target === target)) return {};
+    const n = state.innerCounter + 1;
+    const trigger = opts?.trigger ?? `trigger${n}`;
+    // Dedup on (source, target, trigger): multiple edges between the same pair
+    // are allowed when they carry different triggers.
+    if (state.innerCanvas.edges.some(
+      e => e.source === source && e.target === target && e.trigger === trigger)) return {};
+    const isSelfLoop = source === target;
+    const edge: InnerEdge = {
+      source, target, kind: 'trigger', trigger, delayMs: 1000, waypoints: [],
+      labelOffset: opts?.labelOffset ?? { x: 0, y: 0 },
+      controlPoint: opts?.controlPoint !== undefined
+        ? opts.controlPoint
+        : isSelfLoop ? { ...SELF_LOOP_DEFAULT_CONTROL } : null,
+      sourceOffset: null,
+      targetOffset: null,
+    };
     return {
-      innerCanvas: {
-        ...state.innerCanvas,
-        edges: [...state.innerCanvas.edges, { source, target }],
-      },
+      innerCanvas: { ...state.innerCanvas, edges: [...state.innerCanvas.edges, edge] },
+      // Counter only advances for auto-named edges; caller-supplied triggers
+      // do not consume a slot so default `triggerN` names stay dense.
+      innerCounter: opts?.trigger ? state.innerCounter : n,
       innerError: null,
       ...recordInner(state),
     };
+  }),
+
+  updateInnerEdge: (index, patch) => set(state => {
+    if (!state.innerCanvas) return {};
+    if (index < 0 || index >= state.innerCanvas.edges.length) return {};
+    const edges = state.innerCanvas.edges.map((e, i) => i === index ? { ...e, ...patch } : e);
+    return { innerCanvas: { ...state.innerCanvas, edges }, innerError: null, ...recordInner(state) };
   }),
 
   removeInnerNode: id => set(state => {
@@ -876,10 +978,10 @@ export const useGraphStore = create<State>((set, get) => ({
     return { innerCanvas: { nodes, edges }, innerError: null, ...recordInner(state) };
   }),
 
-  removeInnerEdge: (source, target) => set(state => {
+  removeInnerEdgeAt: index => set(state => {
     if (!state.innerCanvas) return {};
-    const edges = state.innerCanvas.edges.filter(e => !(e.source === source && e.target === target));
-    if (edges.length === state.innerCanvas.edges.length) return {};
+    if (index < 0 || index >= state.innerCanvas.edges.length) return {};
+    const edges = state.innerCanvas.edges.filter((_, i) => i !== index);
     return { innerCanvas: { ...state.innerCanvas, edges }, innerError: null, ...recordInner(state) };
   }),
 
@@ -919,24 +1021,36 @@ export const useGraphStore = create<State>((set, get) => ({
     let counter = state.innerCounter;
     const idMap = new Map<string, string>();
     const names = new Set(
-      state.innerCanvas.nodes.filter((x): x is InnerStateNode => x.kind === 'state').map(x => x.name));
+      state.innerCanvas.nodes
+        .filter((x): x is InnerStateNode => x.kind === 'state')
+        .map(x => x.name));
     const newNodes: InnerNode[] = state.innerClipboard.nodes.map(orig => {
       counter += 1;
       const pos = { x: orig.position.x + 40, y: orig.position.y + 40 };
-      if (orig.kind === 'state') {
-        const nid = `state:__paste${counter}`;
+      if (orig.kind === 'note') {
+        const nid = `note:__paste${counter}`;
         idMap.set(orig.id, nid);
-        let name = `${orig.name}-copy`;
-        while (names.has(name)) name = `${name}-copy`;
-        names.add(name);
-        return { ...orig, id: nid, name, initial: false, position: pos };
+        return { ...orig, id: nid, position: pos };
       }
-      const nid = `transition:__paste${counter}`;
+      const nid = `state:__paste${counter}`;
       idMap.set(orig.id, nid);
-      return { ...orig, id: nid, position: pos };
+      let name = `${orig.name}-copy`;
+      while (names.has(name)) name = `${name}-copy`;
+      names.add(name);
+      return {
+        ...orig, id: nid, name, initial: false, position: pos,
+        machine: orig.machine ? deepClone(orig.machine) : null,  // deep-copy nested submachine
+      };
     });
     const newEdges: InnerEdge[] = state.innerClipboard.edges.map(e => ({
-      source: idMap.get(e.source)!, target: idMap.get(e.target)!,
+      ...e,
+      source: idMap.get(e.source)!,
+      target: idMap.get(e.target)!,
+      labelOffset: { ...e.labelOffset },
+      controlPoint: e.controlPoint ? { ...e.controlPoint } : null,
+      sourceOffset: e.sourceOffset ? { ...e.sourceOffset } : null,
+      targetOffset: e.targetOffset ? { ...e.targetOffset } : null,
+      waypoints: e.waypoints.map(w => ({ ...w })),
     }));
     return {
       innerCanvas: {

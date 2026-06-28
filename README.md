@@ -7,7 +7,7 @@ run it as a single binary, and edit it live in the built-in web UI.
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)
-![Status: v1.0.0](https://img.shields.io/badge/status-v1.0.0-green.svg)
+![Status: v1.1.0](https://img.shields.io/badge/status-v1.1.0-green.svg)
 
 By default it builds against the **real Rheinmetall OnboardAPI SDK**. If you
 don't have that SDK, pass `-DFLOWBOARD_USE_STUB_SDK=ON` to build and run
@@ -82,6 +82,7 @@ The palette groups the built-in nodes by role:
 | **Input** | Button Handler (HidJoystick `EventButton` → per-button bool outputs) |
 | **Flow & Structure** | State Machine, Group, Note |
 | **OnboardAPI** | Discovery, Device Report, plus a generated Service / Client pair (and struct factories) for every interface in the data model |
+| **Scripting** | `Python.Script` — declare typed inputs/outputs and write a Python script with autocomplete in the browser editor (see [`docs/PYTHON_NODE.md`](docs/PYTHON_NODE.md)) |
 
 Most numeric nodes (Arithmetic, Number Holder, Iterator, Manipulate Number,
 Compare, Threshold, …) and the list builders work across every primitive type
@@ -89,6 +90,16 @@ via a per-node type dropdown. New OnboardAPI interfaces come from the data-model
 submodule automatically. To add your own custom node, see
 [`docs/ADDING_A_NODE.md`](docs/ADDING_A_NODE.md). For the full port/config
 reference of every node, see [`docs/NODES.md`](docs/NODES.md).
+
+## Plugins
+
+Beyond the built-in nodes, you can extend Flowboard with **plugins** — C++
+shared libraries that provide their own nodes (with properties, inputs and
+outputs) and are loaded at startup from a `plugins/` folder. Plugin nodes appear
+in the palette, get property forms and live values, and work in any graph just
+like built-ins. A buildable example ships in
+[`examples/plugins/hello_plugin`](examples/plugins/hello_plugin); see
+[`docs/PLUGINS.md`](docs/PLUGINS.md) for how to build, deploy and use them.
 
 ## Build options
 
@@ -119,6 +130,8 @@ provide it.
   from the registry
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how the engine fits together
 - [`docs/ADDING_A_NODE.md`](docs/ADDING_A_NODE.md) — write your own node
+- [`docs/PLUGINS.md`](docs/PLUGINS.md) — package nodes as loadable C++ plugins
+- [`docs/PYTHON_NODE.md`](docs/PYTHON_NODE.md) — the `Python.Script` node and its in-browser editor
 
 The full API reference + architecture + node pages are published to **GitHub
 Pages** by the `Docs` workflow on every push to `main` (Settings → Pages →
